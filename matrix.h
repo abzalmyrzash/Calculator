@@ -1,6 +1,7 @@
 #pragma once
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 typedef struct {
 	double* val;
@@ -29,11 +30,35 @@ Matrix* Matrix_new(int N, int M)
 	return matrix;
 }
 
+Matrix* Matrix_copy(Matrix* matrix) {
+	Matrix* copy = Matrix_new(matrix->N, matrix->M);
+	memcpy(copy->val, matrix->val, matrix->N * matrix->M * sizeof(double));
+	return copy;
+}
+
 void Matrix_free(Matrix* matrix)
 {
 	if(matrix == NULL) return;
 	free(matrix->val);
 	free(matrix);
+}
+
+Matrix* Matrix_input(int N, int M)
+{
+	if (N <= 0 || M <= 0 || N > 100 || M > 100) {
+		printf("ERROR: Invalid matrix size!\n");
+		return NULL;
+	}
+	Matrix* matrix = Matrix_new(N, M);
+	printf("Enter your %dx%d matrix:\n", N, M);
+	for (int i = 0; i < N; i++) {
+		for (int j = 0; j < M; j++) {
+			scanf("%lf", Matrix_at(matrix, i, j));
+		}
+	}
+	char c;
+	while ((c = getchar()) != '\n' && c != EOF) { }
+	return matrix;
 }
 
 void Matrix_print(Matrix* A)
@@ -42,7 +67,7 @@ void Matrix_print(Matrix* A)
 	printf("{\n");
 	for (int i = 0; i < A->N; i++) {
 		for (int j = 0; j < A->M; j++) {
-			printf("%f ", *Matrix_at(A, i, j));
+			printf("%g ", *Matrix_at(A, i, j));
 		}
 		printf("\n");
 	}
@@ -99,3 +124,10 @@ Matrix* Matrix_multiply(Matrix* A, Matrix* B)
 	return C;
 }
 
+Matrix* Matrix_scale(Matrix* A, double c) {
+	for (int i = 0; i < A->N; i++) {
+		for (int j = 0; j < A->M; j++) {
+			*Matrix_at(A, i, j) *= c;
+		}
+	}
+}

@@ -47,6 +47,13 @@ void HashMap_init(HashMap* mp, int capacity)
     return;
 }
 
+HashMap* HashMap_new(int capacity)
+{
+	HashMap* mp = (HashMap*)malloc(sizeof(HashMap));
+	HashMap_init(mp, capacity);
+	return mp;
+}
+
 int hashFunction(HashMap* mp, char* key)
 {
     int bucketIndex;
