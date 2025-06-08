@@ -148,9 +148,9 @@ int process_tokens_let(Token* tokens, int len) {
 	}
 	else {
 		if(strsame(tokens[2].str, "calc")) {
-			process_tokens_calc(tokens+3, len-3);
+			if(process_tokens_calc(tokens+3, len-3)) return 1;
 		}
-		process_tokens_calc(tokens+2, len-2);
+		if (process_tokens_calc(tokens+2, len-2)) return 1;
 		copy_var_with_name(memory, name);
 	}
 	

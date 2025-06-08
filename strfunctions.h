@@ -1,6 +1,7 @@
 #pragma once
-#include "string.h"
-#include "ctype.h"
+#include <string.h>
+#include <ctype.h>
+#include <stdbool.h>
 #include "dynarr.h"
 
 char* str_get_null_terminated(char* str, int len) {
