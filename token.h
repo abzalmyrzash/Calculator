@@ -30,6 +30,18 @@ void Token_print(Token* t){
 	printf("%s - %s\n", t->str, tokenTypeStrArr[t->type]);
 }
 
+void Token_free(Token* t) {
+	free(t->str);
+	free(t);
+}
+
+Token* Token_copy(Token* t) {
+	Token* copy = malloc(sizeof(Token));
+	strcpy(copy->str, t->str);
+	copy->type = t->type;
+	return copy;
+}
+
 void DynArrToken_print(void* data, int len){
 	for (int i = 0; i < len; i++) {
 		Token_print((Token*)data + i);
@@ -46,18 +58,19 @@ DynArrFunc DynArrTokenFunc = {
 	DynArrToken_free
 };
 
-#define NUM_OPERATIONS 11
-#define NUM_SINGLE_CHAR_OPS 7
-#define NUM_DOUBLE_CHAR_OPS 4
+#define NUM_OPERATIONS 19
+#define NUM_SINGLE_CHAR_OPS 11
+#define NUM_DOUBLE_CHAR_OPS 8
 
 char* operations[NUM_OPERATIONS] = {
-	"+", "-", "*", "/", "%", ">", "<", "==", "!=", ">=", "<="
+	"+", "-", "*", "/", "%", "^", "!", "'", ">", "<", "~"
+	"//", "%%", "==", "~=", ">=", "<=", "&&", "||",
 };
 
-char* single_char_ops = "+-*/%><";
+char* single_char_ops = "+-*/%^!'><~";
 
 char* double_char_ops[NUM_DOUBLE_CHAR_OPS] = {
-	"==", "!=", ">=", "<="
+	"//", "%%", "==", "~=", ">=", "<=", "&&", "||"
 };
 
 int str_is_op_len(char* str) {

@@ -87,7 +87,6 @@ void _DynArr_check_range(DynArr *a, int index, int n) {
 }
 
 void* DynArr_at(DynArr* a, int index) {
-	_DynArr_check_index(a, index);
 	return a->data + index * a->elem_size;
 }
 

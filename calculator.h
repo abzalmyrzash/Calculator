@@ -1,146 +1,11 @@
 #pragma once
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include "matrix.h"
-#include "matrixdynarr.h"
-#include "dynarr.h"
+#include "operation.h"
 #include "hashmap.h"
 #include "strfunctions.h"
 #include "token.h"
+#include "stack.h"
 
-typedef enum {
-	VAR_TYPE_NULL,
-	VAR_TYPE_NUMBER,
-	VAR_TYPE_MATRIX
-} VariableType;
-
-char* variableTypeStrArr[3] = {
-	"NULL",
-	"NUMBER",
-	"MATRIX"
-};
-
-typedef struct {
-	VariableType type;
-	char* name;
-	void* data;
-} Variable;
-
-void Variable_init(Variable* var, VariableType type, char* name, void* data) {
-	var->type = type;
-	var->name = name;
-	var->data = data;
-}
-
-Variable* Variable_new(VariableType type, char* name, void* data) {
-	Variable* var = malloc(sizeof(Variable));
-	Variable_init(var, type, name, data);
-	return var;
-}
-
-void Variable_print(Variable* var) {
-	if (var == NULL || var->type == VAR_TYPE_NULL) {
-		printf("NULL\n");
-		return;
-	}
-	printf("%s %s = ", variableTypeStrArr[var->type], var->name);
-	switch(var->type) {
-
-	case VAR_TYPE_MATRIX:
-		Matrix_print(var->data);
-		break;
-	case VAR_TYPE_NUMBER:
-		printf("%g\n", var->data);
-	default:
-		printf("BUG: IMPOSSIBLE VARIABLE TYPE!\n");
-		break;
-	}
-}
-
-Variable* Variable_copy(Variable* var) {
-	Variable* copy = malloc(sizeof(Variable));
-	copy->type = var->type;
-	if(var->name != NULL) {
-		copy->name = malloc(strlen(var->name)+1);
-		strcpy(copy->name, var->name);
-	} else copy->name = NULL;
-	switch(var->type) {
-		case VAR_TYPE_NULL:
-			copy->data = NULL;
-			break;
-		case VAR_TYPE_NUMBER:
-			copy->data = malloc(sizeof(double));
-			memcpy(copy->data, var->data, sizeof(double));
-			break;
-		case VAR_TYPE_MATRIX:
-			copy->data = Matrix_copy(var->data);
-			break;
-		default:
-			printf("BUG: IMPOSSIBLE VARIABLE TYPE!\n");
-			break;
-	}
-	return copy;
-}
-	
-void Variable_free_data(Variable* var) {
-	if (var == NULL || var->data == NULL) return;
-	switch(var->type) {
-
-	case VAR_TYPE_MATRIX:
-		Matrix_free(var->data);
-		break;
-	case VAR_TYPE_NUMBER:
-		free(var->data);
-		break;
-	default:
-		printf("BUG: IMPOSSIBLE VARIABLE TYPE!\n");
-		break;
-	}
-}
-
-void DynArrVar_print(void* data, int len) {
-	for (int i = 0; i < len; i++) {
-		Variable_print(data + i);
-	}
-}
-
-void* DynArrVar_copy(void* ptr) {
-	return Variable_copy(ptr);
-}
-
-void DynArrVar_free(void* ptr) {
-	Variable* var = (Variable*)ptr;
-	free(var->name);
-	Variable_free_data(var);
-}
-
-DynArrFunc DynArrVarFunc = {DynArrVar_print, DynArrVar_copy, DynArrVar_free};
-
-DynArr* variables;
-HashMap* hashmap;
-Variable* memory;
-
-void init_globals() {
-	variables = DynArr_new(sizeof(Variable), 8, DynArrVarFunc);
-	hashmap = HashMap_new(8);
-	memory = Variable_new(VAR_TYPE_NULL, "mem", NULL);
-}
-
-typedef struct {
-	double a, b;
-	char op;
-} NumberOperation;
-
-typedef struct {
-	Matrix A, B;
-	char op;
-} MatrixOperation;
-
-typedef struct {
-	Matrix A;
-	double c;
-} MatrixScale;
+ExpressionTree *tree = NULL;
 
 void clear_stdin() {
 	char c;
@@ -152,73 +17,64 @@ Variable* get_var_by_name(char *name)
 	return (Variable*)HashMap_search(hashmap, name);
 }
 
-Variable* save_variable(char *name)
+Variable* copy_var_with_name(Variable* var, char *name)
 {
-	char* name_permanent;
 	Variable* oldVar = get_var_by_name(name); 
 	if(oldVar != NULL) {
-		name_permanent = oldVar->name;
 		HashMap_delete(hashmap, name);
-		DynArr_delete(variables, oldVar);
-	} else {
-		name_permanent = malloc(strlen(name)+1);
-		strcpy(name_permanent, name);
+		Variable_free(oldVar);
 	}
-	Variable* var = DynArr_append(variables, memory);
-	free(var->name);
-	var->name = name_permanent;
-	HashMap_insert(hashmap, name_permanent, var);
-	return var;
+	Variable* copy = Variable_copy(var);
+	Variable_change_name(copy, name);
+	HashMap_insert(hashmap, copy->name, copy);
+	return copy;
 }
 
 void delete_variable(char *name)
 {
 	Variable* var = get_var_by_name(name);
-	if (var == NULL) return;
-	DynArr_delete(variables, var);
+	if (var == NULL) {
+		printf("ERROR: doesn't exist!\n");
+		return;
+	}
 	HashMap_delete(hashmap, name);
-	Variable_free_data(var);
-	free(var->name);
-	free(var);
+	Variable_free(var);
 }
 
-void Variable_assign_number(Variable* var, double* number) {
-	if(var == NULL) {
-		var = (Variable*)malloc(sizeof(Variable));
-	} else {
-		Variable_free_data(var);
-	}
-	var->type = VAR_TYPE_NUMBER;
-	var->data = number;
-}
-
-void Variable_assign_matrix(Variable* var, Matrix* matrix) {
-	if(var == NULL) {
-		var = (Variable*)malloc(sizeof(Variable));
-	} else {
-		// Variable_free_data(var);
-	}
-	var->type = VAR_TYPE_MATRIX;
-	var->data = matrix;
-}
-
-#define SPECIAL_TOKENS_SIZE 11
+#define SPECIAL_TOKENS_SIZE 10
 char* special_tokens[SPECIAL_TOKENS_SIZE] = {
-	"exit", "quit", "let", "calc", "solve", "mem", "matrix",
+	"exit", "quit", "let", "calc", "solve", "matrix",
 	"save", "del", "print", "help"
 };
 
 int process_tokens_let(Token* tokens, int len) {
+	if(len != 2) {
+		printf("ERROR: Invalid number of arguments!\n");
+		return 1;
+	}
+	if(tokens[0].type != TOKEN_TYPE_NAME) {
+		printf("ERROR: Invalid name!\n");
+		return 1;
+	}
+	char* name = tokens[0].str;
+	if(str_find_in_list(name, special_tokens, SPECIAL_TOKENS_SIZE) != -1) {
+		printf("ERROR: Invalid name!\n");
+		return 1;
+	}
+	
 	return 0;
 }
 
 int process_tokens_calc(Token* tokens, int len) {
 	Matrix* prev;
+	int cnt_bracket1 = 0;
+	int cnt_bracket2 = 0;
+	Stack* bracketStack = Stack_new();
 	for (int i = 0; i < len; i++) {
 		Token t = tokens[i];
 		switch(t.type) {
 			case TOKEN_TYPE_NAME:
-				void* ptr = HashMap_search(hashmap, t.str);
+				void* ptr = get_var_by_name(t.str);
 				if (ptr == NULL) {
 					printf("ERROR: %s doesn't exist!\n", t.str);
 					return 1;
@@ -229,10 +85,14 @@ int process_tokens_calc(Token* tokens, int len) {
 			case TOKEN_TYPE_OPERATION:
 				break;
 			case TOKEN_TYPE_EQUAL:
+				printf("Equal sign not supported yet\n");
+				return 1;
 				break;
 			case TOKEN_TYPE_BRACKET1:
+				cnt_bracket1++;
 				break;
 			case TOKEN_TYPE_BRACKET2:
+				cnt_bracket2++;
 				break;
 			case TOKEN_TYPE_INVALID:
 				printf("Invalid token!\n");
@@ -244,6 +104,20 @@ int process_tokens_calc(Token* tokens, int len) {
 				break;
 		}
 	}
+	if(cnt_bracket1 != cnt_bracket2) {
+		printf("ERROR: Non-matching brackets!\n");
+		return 1;
+	}
+	if(tree != NULL) {
+		ExpressionTree_free(tree);
+	}
+	tree = ExpressionTree_new(tokens, len);
+	printf("Tree created\n");
+	ExpressionTree_print(tree);
+	ExpressionTree_split(tree);
+	printf("Tree split\n");
+	ExpressionTree_print(tree);
+	Variable_print(ExpressionTree_evaluate(tree));
 	return 0;
 }
 
@@ -264,7 +138,6 @@ int process_tokens_matrix(Token* tokens, int len) {
 	int M = strtol(tokens[1].str, &endPtr, 10);
 	Matrix* matrix = Matrix_input(N, M);
 	Variable_assign_matrix(memory, matrix);
-	Variable_print(memory);
 	return 0;
 }
 
@@ -282,7 +155,7 @@ int process_tokens_save(Token* tokens, int len) {
 		printf("ERROR: Invalid name!\n");
 		return 1;
 	}
-	save_variable(name);
+	copy_var_with_name(memory, name);
 	return 0;
 }
 
@@ -307,15 +180,6 @@ int process_tokens_print(Token* tokens, int len) {
 		return 1;
 	}
 	Variable_print(var);
-	return 0;
-}
-
-int process_tokens_mem(Token* tokens, int len) {
-	if(memory == NULL) {
-		printf("Memory is NULL!\n");
-		return 0;
-	}
-	Variable_print(memory);
 	return 0;
 }
 
@@ -357,9 +221,6 @@ int process_tokens(Token* tokens, int len) {
 		if (specialToken == "del") {
 			return process_tokens_del(tokens+1, len-1);
 		}
-		if (specialToken == "mem") {
-			return process_tokens_mem(tokens+1, len-1);
-		}
 		if (specialToken == "print") {
 			return process_tokens_print(tokens+1, len-1);
 		}
@@ -372,3 +233,22 @@ int process_tokens(Token* tokens, int len) {
 	}
 	return 0;
 }
+
+int process_command(char* command) {
+	DynArr* words = split_by_space(command);
+	if (words->len == 0) {
+		DynArr_free(words);
+		return 1;
+	}
+	DynArr* tokens = split_into_tokens(words->data, words->len);
+	DynArr_free(words);
+	if (tokens->len == 0) {
+		DynArr_free(tokens);
+		return 1;
+	}
+	// DynArr_print(tokens);
+	int res = process_tokens(tokens->data, tokens->len);
+	DynArr_free(tokens);
+	return res;
+}
+

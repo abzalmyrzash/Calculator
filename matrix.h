@@ -125,9 +125,22 @@ Matrix* Matrix_multiply(Matrix* A, Matrix* B)
 }
 
 Matrix* Matrix_scale(Matrix* A, double c) {
+	Matrix* B = Matrix_new(A->N, A->M);
 	for (int i = 0; i < A->N; i++) {
 		for (int j = 0; j < A->M; j++) {
-			*Matrix_at(A, i, j) *= c;
+			*Matrix_at(B, i, j) = *Matrix_at(A, i, j) * c;
 		}
 	}
+	return B;
 }
+
+Matrix* Matrix_transpose(Matrix* A) {
+	Matrix* B = Matrix_new(A->M, A->N);
+	for (int i = 0; i < B->N; i++) {
+		for (int j = 0; j < B->M; j++) {
+			*Matrix_at(B, i, j) = *Matrix_at(A, j, i);
+		}
+	}
+	return B;
+}
+
