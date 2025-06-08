@@ -113,7 +113,6 @@ int process_tokens_calc(Token* tokens, int len) {
 	}
 	tree = ExpressionTree_new(tokens, len);
 	printf("Tree created\n");
-	ExpressionTree_print(tree);
 	ExpressionTree_split(tree);
 	printf("Tree split\n");
 	ExpressionTree_print(tree);
