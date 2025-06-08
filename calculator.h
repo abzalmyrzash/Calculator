@@ -41,27 +41,29 @@ void delete_variable(char *name)
 	Variable_free(var);
 }
 
-#define SPECIAL_TOKENS_SIZE 10
-char* special_tokens[SPECIAL_TOKENS_SIZE] = {
-	"exit", "quit", "let", "calc", "solve", "matrix",
-	"save", "del", "print", "help"
-};
-
-int process_tokens_let(Token* tokens, int len) {
-	if(len != 2) {
+int process_tokens_matrix(Token* tokens, int len) {
+	if (len != 3) {
 		printf("ERROR: Invalid number of arguments!\n");
 		return 1;
 	}
-	if(tokens[0].type != TOKEN_TYPE_NAME) {
-		printf("ERROR: Invalid name!\n");
-		return 1;
+	for (int i = 0; i < len; i++) {
+		Token t = tokens[i];
+		if (i == 1) {
+			if (t.type != TOKEN_TYPE_COMMA) {
+				printf("ERROR: Comma was expected, but not provided!\n");
+				return 1;
+			}
+		}
+		else if (!str_is_int(t.str)) {
+			printf("ERROR: Non-integer argument provided!\n");
+			return 1;
+		}
 	}
-	char* name = tokens[0].str;
-	if(str_find_in_list(name, special_tokens, SPECIAL_TOKENS_SIZE) != -1) {
-		printf("ERROR: Invalid name!\n");
-		return 1;
-	}
-	
+	char* endPtr;
+	int N = strtol(tokens[0].str, &endPtr, 10);
+	int M = strtol(tokens[2].str, &endPtr, 10);
+	Matrix* matrix = Matrix_input(N, M);
+	Variable_assign_matrix(memory, matrix);
 	return 0;
 }
 
@@ -84,17 +86,15 @@ int process_tokens_calc(Token* tokens, int len) {
 				break;
 			case TOKEN_TYPE_OPERATION:
 				break;
-			case TOKEN_TYPE_EQUAL:
-				printf("Equal sign not supported yet\n");
-				return 1;
-				break;
 			case TOKEN_TYPE_BRACKET1:
 				cnt_bracket1++;
 				break;
 			case TOKEN_TYPE_BRACKET2:
 				cnt_bracket2++;
 				break;
-			case TOKEN_TYPE_INVALID:
+			case TOKEN_TYPE_EQUAL:
+			case TOKEN_TYPE_COMMA:
+			case TOKEN_TYPE_SPECIAL:
 				printf("Invalid token!\n");
 				return 1;
 				break;
@@ -112,31 +112,48 @@ int process_tokens_calc(Token* tokens, int len) {
 		ExpressionTree_free(tree);
 	}
 	tree = ExpressionTree_new(tokens, len);
-	printf("Tree created\n");
-	ExpressionTree_split(tree);
-	printf("Tree split\n");
-	ExpressionTree_print(tree);
-	Variable_print(ExpressionTree_evaluate(tree));
+	if (ExpressionTree_split(tree) == 1) {
+		return 1;
+	}
+	//ExpressionTree_print(tree);
+	Variable* res = ExpressionTree_evaluate(tree);
+	if (res == NULL) {
+		printf("ERROR: Failed to evaluate!\n");
+		return 1;
+	}
+	Variable_free_data(memory);
+	Variable_assign_data(memory, res);
+	Variable_print(res, false);
+	
 	return 0;
 }
 
-int process_tokens_matrix(Token* tokens, int len) {
-	if (len != 2) {
+int process_tokens_let(Token* tokens, int len) {
+	if(len < 3) {
 		printf("ERROR: Invalid number of arguments!\n");
 		return 1;
 	}
-	for (int i = 0; i < len; i++) {
-		Token t = tokens[i];
-		if (!str_is_int(t.str)) {
-			printf("ERROR: Non-integer argument provided!\n");
-			return 1;
-		}
+	if(tokens[0].type != TOKEN_TYPE_NAME) {
+		printf("ERROR: Variable name expected, but not provided!\n");
+		return 1;
 	}
-	char* endPtr;
-	int N = strtol(tokens[0].str, &endPtr, 10);
-	int M = strtol(tokens[1].str, &endPtr, 10);
-	Matrix* matrix = Matrix_input(N, M);
-	Variable_assign_matrix(memory, matrix);
+	if(tokens[1].type != TOKEN_TYPE_EQUAL) {
+		printf("ERROR: Equal sign expected, but not provided!\n");
+		return 1;
+	}
+	char* name = tokens[0].str;
+	if(strsame(tokens[2].str, "matrix")) {
+		process_tokens_matrix(tokens+3, len-3);
+		copy_var_with_name(memory, name);
+	}
+	else {
+		if(strsame(tokens[2].str, "calc")) {
+			process_tokens_calc(tokens+3, len-3);
+		}
+		process_tokens_calc(tokens+2, len-2);
+		copy_var_with_name(memory, name);
+	}
+	
 	return 0;
 }
 
@@ -178,7 +195,7 @@ int process_tokens_print(Token* tokens, int len) {
 		printf("ERROR: %s doesn't exist!\n", name);
 		return 1;
 	}
-	Variable_print(var);
+	Variable_print(var, true);
 	return 0;
 }
 
@@ -192,11 +209,6 @@ int process_tokens_help(Token* tokens, int len) {
 }
 
 int process_tokens(Token* tokens, int len) {
-	DynArr* invalid = Token_indices_by_type(tokens, len, TOKEN_TYPE_INVALID);
-	if (invalid->len > 0) {
-		printf("ERROR: Invalid tokens!\n");
-		return 1;
-	}
 	Token firstToken = tokens[0];
 	int special_index = str_find_in_list(
 		firstToken.str, special_tokens, SPECIAL_TOKENS_SIZE);
@@ -241,7 +253,8 @@ int process_command(char* command) {
 	}
 	DynArr* tokens = split_into_tokens(words->data, words->len);
 	DynArr_free(words);
-	if (tokens->len == 0) {
+	if (tokens == NULL) return 1;
+	if (!validate_tokens(tokens->data, tokens->len)) {
 		DynArr_free(tokens);
 		return 1;
 	}

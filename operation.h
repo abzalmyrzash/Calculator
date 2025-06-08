@@ -168,7 +168,7 @@ struct TreeNode* _TreeNode_new(Token* token, int exprLen) {
 	return node;
 }
 
-void _TreeNode_split(struct TreeNode* node) {
+int _TreeNode_split(struct TreeNode* node) {
 	Token* chosenOperation = NULL; // the operation token where the split happens
 	// chosen operation must have minimum bracketLevel and priority
 	OperationPriority minPriority;
@@ -229,9 +229,9 @@ void _TreeNode_split(struct TreeNode* node) {
 		}
 		if (node->value == NULL) {
 			printf("ERROR: failed to assign value to tree leaf!\n");
-			return;
+			return 1;
 		}
-		return;
+		return 0;
 	}
 	// if operation was found, split expression into left and right children
 	// with operation in the middle as their parent
@@ -248,8 +248,9 @@ void _TreeNode_split(struct TreeNode* node) {
 	node->right = _TreeNode_new(rightToken, rightLen);
 	node->expr = chosenOperation;
 	node->exprLen = 1;
-	_TreeNode_split(node->right);
-	_TreeNode_split(node->left);
+	if(_TreeNode_split(node->right) == 1) return 1;
+	if(_TreeNode_split(node->left) == 1) return 1;
+	return 0;
 }
 
 Variable* _TreeNode_evaluate(struct TreeNode* node) {
@@ -270,8 +271,8 @@ ExpressionTree* ExpressionTree_new(Token* tokens, int len) {
 	return tree;
 }
 
-void ExpressionTree_split(ExpressionTree* tree) {
-	_TreeNode_split(tree->root);
+int ExpressionTree_split(ExpressionTree* tree) {
+	return _TreeNode_split(tree->root);
 }
 
 Variable* ExpressionTree_evaluate(ExpressionTree* tree) {

@@ -7,18 +7,20 @@ typedef enum {
 	TOKEN_TYPE_OPERATION,
 	TOKEN_TYPE_BRACKET1,
 	TOKEN_TYPE_BRACKET2,
+	TOKEN_TYPE_COMMA,
 	TOKEN_TYPE_EQUAL,
-	TOKEN_TYPE_INVALID
+	TOKEN_TYPE_SPECIAL,
 } TokenType;
 
-char* tokenTypeStrArr[7] = {
+char* tokenTypeStrArr[] = {
 	"TOKEN_TYPE_NAME",
 	"TOKEN_TYPE_NUMBER",
 	"TOKEN_TYPE_OPERATION",
 	"TOKEN_TYPE_BRACKET1",
 	"TOKEN_TYPE_BRACKET2",
+	"TOKEN_TYPE_COMMA",
 	"TOKEN_TYPE_EQUAL",
-	"TOKEN_TYPE_INVALID"
+	"TOKEN_TYPE_SPECIAL"
 };
 
 typedef struct {
@@ -85,6 +87,12 @@ int str_is_op_len(char* str) {
 	return len;
 }
 
+#define SPECIAL_TOKENS_SIZE 10
+char* special_tokens[SPECIAL_TOKENS_SIZE] = {
+	"exit", "quit", "let", "calc", "solve", "matrix",
+	"save", "del", "print", "help"
+};
+
 DynArr* split_into_tokens(char** words, int len)
 {
 	DynArr* tokens = DynArr_new(sizeof(Token), 8, DynArrTokenFunc);
@@ -104,13 +112,31 @@ DynArr* split_into_tokens(char** words, int len)
 			bool is_equal_sign = *tokenStart == '=';
 			bool is_bracket1 = *tokenStart == '(';
 			bool is_bracket2 = *tokenStart == ')';
+			bool is_comma = *tokenStart == ',';
+			TokenType prevType = -1;
+			bool prev_is_var = false;
+			if (tokens->len > 0) {
+				prevType = ((Token*)DynArr_at(tokens, tokens->len - 1))->type;
+				prev_is_var = prevType == TOKEN_TYPE_NUMBER || prevType == TOKEN_TYPE_NAME;
+			}
 
 			if (name_len > 0) {
 				tokenLen = name_len;
 				tokenType = TOKEN_TYPE_NAME;
+
+				tokenString = str_get_null_terminated(tokenStart, tokenLen);
+				if (str_is_one_of(tokenString, special_tokens, SPECIAL_TOKENS_SIZE)) {
+					tokenType = TOKEN_TYPE_SPECIAL;
+				}
+				free(tokenString);
 			}
 
 			else if (num_len > 0) {
+				if (prev_is_var) {
+					printf("ERROR: number without an operator!\n");
+					DynArr_free(tokens);
+					return NULL;
+				}
 				tokenLen = num_len;
 				tokenType = TOKEN_TYPE_NUMBER;
 			}
@@ -135,18 +161,39 @@ DynArr* split_into_tokens(char** words, int len)
 				tokenType = TOKEN_TYPE_BRACKET2;
 			}
 
-			else {
+			else if (is_comma) {
 				tokenLen = 1;
-				tokenType = TOKEN_TYPE_INVALID;
+				tokenType = TOKEN_TYPE_COMMA;
 			}
 
-			char* tokenString = str_get_null_terminated(tokenStart, tokenLen);
+			else {
+				printf("ERROR: Invalid token!\n");
+				DynArr_free(tokens);
+				return NULL;
+			}
+
+			// if something like 2a is inputted, assume multiplication
+			if (prevType != TOKEN_TYPE_SPECIAL &&
+		(prevType == TOKEN_TYPE_NUMBER || prevType == TOKEN_TYPE_NAME)
+		&& (tokenType == TOKEN_TYPE_NAME || tokenType == TOKEN_TYPE_BRACKET1)) {
+				char* multiplyStr = malloc(2);
+				strcpy(multiplyStr, "*");
+				Token multiplyToken = (Token){multiplyStr, TOKEN_TYPE_OPERATION};
+				DynArr_append(tokens, &multiplyToken);
+			}
+
+			tokenString = str_get_null_terminated(tokenStart, tokenLen);
 			token = (Token){tokenString, tokenType};
 			tokenStart += tokenLen;
 			DynArr_append(tokens, &token);
 		}
 	}
 	return tokens;
+}
+
+bool validate_tokens(Token* tokens, int len) {
+	if (len == 0) return false;
+	return true;
 }
 
 DynArr* Token_indices_by_type(Token* tokens, int len, TokenType type) {

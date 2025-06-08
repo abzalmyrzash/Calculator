@@ -33,12 +33,17 @@ Variable* Variable_new(VariableType type, char* name, void* data) {
 	return var;
 }
 
-void Variable_print(Variable* var) {
+void Variable_print(Variable* var, bool withTypeName) {
 	if (var == NULL || var->type == VAR_TYPE_NULL) {
 		printf("NULL\n");
 		return;
 	}
-	printf("%s %s = ", variableTypeStrArr[var->type], var->name);
+	if(withTypeName) {
+		if (var->name != NULL)
+			printf("%s %s = ", variableTypeStrArr[var->type], var->name);
+		else
+			printf("%s = ", variableTypeStrArr[var->type]);
+	}
 	switch(var->type) {
 
 	case VAR_TYPE_MATRIX:
@@ -53,6 +58,26 @@ void Variable_print(Variable* var) {
 	}
 }
 
+void* Variable_copy_data(Variable* var) {
+	void* copy_data;
+	switch(var->type) {
+		case VAR_TYPE_NULL:
+			copy_data = NULL;
+			break;
+		case VAR_TYPE_NUMBER:
+			copy_data = malloc(sizeof(double));
+			memcpy(copy_data, var->data, sizeof(double));
+			break;
+		case VAR_TYPE_MATRIX:
+			copy_data = Matrix_copy(var->data);
+			break;
+		default:
+			printf("BUG: IMPOSSIBLE VARIABLE TYPE!\n");
+			break;
+	}
+	return copy_data;
+}
+
 Variable* Variable_copy(Variable* var) {
 	Variable* copy = malloc(sizeof(Variable));
 	copy->type = var->type;
@@ -60,25 +85,17 @@ Variable* Variable_copy(Variable* var) {
 		copy->name = malloc(strlen(var->name)+1);
 		strcpy(copy->name, var->name);
 	} else copy->name = NULL;
-	switch(var->type) {
-		case VAR_TYPE_NULL:
-			copy->data = NULL;
-			break;
-		case VAR_TYPE_NUMBER:
-			copy->data = malloc(sizeof(double));
-			memcpy(copy->data, var->data, sizeof(double));
-			break;
-		case VAR_TYPE_MATRIX:
-			copy->data = Matrix_copy(var->data);
-			break;
-		default:
-			printf("BUG: IMPOSSIBLE VARIABLE TYPE!\n");
-			break;
-	}
+	copy->data = Variable_copy_data(var);
 	return copy;
 }
+
+Variable* Variable_assign_data(Variable* dest, Variable* source) {
+	dest->type = source->type;
+	dest->data = Variable_copy_data(source);
+	return dest;
+}
 	
-void _Variable_free_data(Variable* var) {
+void Variable_free_data(Variable* var) {
 	if (var == NULL || var->data == NULL) return;
 	switch(var->type) {
 
@@ -89,13 +106,14 @@ void _Variable_free_data(Variable* var) {
 		free(var->data);
 		break;
 	default:
-		printf("BUG: IMPOSSIBLE VARIABLE TYPE!\n");
+		printf("BUG IN Variable_free_data: IMPOSSIBLE VARIABLE TYPE!\n");
 		break;
 	}
 }
 
 void Variable_free(Variable* var) {
-	_Variable_free_data(var);
+	if (var == NULL) return;
+	Variable_free_data(var);
 	free(var->name);
 	free(var);
 }
@@ -112,7 +130,7 @@ void Variable_assign_number(Variable* var, double* number) {
 	if(var == NULL) {
 		var = (Variable*)malloc(sizeof(Variable));
 	} else {
-		_Variable_free_data(var);
+		Variable_free_data(var);
 	}
 	var->type = VAR_TYPE_NUMBER;
 	var->data = number;
@@ -122,9 +140,8 @@ void Variable_assign_matrix(Variable* var, Matrix* matrix) {
 	if(var == NULL) {
 		var = (Variable*)malloc(sizeof(Variable));
 	} else {
-		_Variable_free_data(var);
+		Variable_free_data(var);
 	}
 	var->type = VAR_TYPE_MATRIX;
 	var->data = matrix;
 }
-

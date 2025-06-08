@@ -4,7 +4,7 @@
 
 void DynArrVar_print(void* data, int len) {
 	for (int i = 0; i < len; i++) {
-		Variable_print(data + i);
+		Variable_print(data + i, true);
 	}
 }
 
@@ -15,7 +15,7 @@ void* DynArrVar_copy(void* ptr) {
 void DynArrVar_free(void* ptr) {
 	Variable* var = (Variable*)ptr;
 	free(var->name);
-	_Variable_free_data(var);
+	Variable_free_data(var);
 }
 
 DynArrFunc DynArrVarFunc = {DynArrVar_print, DynArrVar_copy, DynArrVar_free};
