@@ -113,6 +113,7 @@ DynArr* split_into_tokens(char** words, int len)
 			bool is_bracket1 = *tokenStart == '(';
 			bool is_bracket2 = *tokenStart == ')';
 			bool is_comma = *tokenStart == ',';
+			bool is_minus = *tokenStart == '-';
 			TokenType prevType = -1;
 			bool prev_is_var = false;
 			if (tokens->len > 0) {
@@ -131,12 +132,7 @@ DynArr* split_into_tokens(char** words, int len)
 				free(tokenString);
 			}
 
-			else if (op_len > 0) {
-				tokenLen = op_len;
-				tokenType = TOKEN_TYPE_OPERATION;
-			}
-
-			else if (num_len > 0) {
+			else if (num_len > 0 && (!is_minus || (is_minus && !prev_is_var))) {
 				if (prev_is_var) {
 					printf("ERROR: number without an operator!\n");
 					DynArr_free(tokens);
@@ -144,6 +140,11 @@ DynArr* split_into_tokens(char** words, int len)
 				}
 				tokenLen = num_len;
 				tokenType = TOKEN_TYPE_NUMBER;
+			}
+
+			else if (op_len > 0) {
+				tokenLen = op_len;
+				tokenType = TOKEN_TYPE_OPERATION;
 			}
 
 			else if (is_equal_sign) {
