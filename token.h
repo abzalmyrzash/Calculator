@@ -131,6 +131,11 @@ DynArr* split_into_tokens(char** words, int len)
 				free(tokenString);
 			}
 
+			else if (op_len > 0) {
+				tokenLen = op_len;
+				tokenType = TOKEN_TYPE_OPERATION;
+			}
+
 			else if (num_len > 0) {
 				if (prev_is_var) {
 					printf("ERROR: number without an operator!\n");
@@ -139,11 +144,6 @@ DynArr* split_into_tokens(char** words, int len)
 				}
 				tokenLen = num_len;
 				tokenType = TOKEN_TYPE_NUMBER;
-			}
-
-			else if (op_len > 0) {
-				tokenLen = op_len;
-				tokenType = TOKEN_TYPE_OPERATION;
 			}
 
 			else if (is_equal_sign) {
