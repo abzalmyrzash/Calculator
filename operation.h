@@ -28,6 +28,10 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 		return NULL;
 	}		
 
+	if (a == NULL && b != NULL) {
+		return NULL;
+	}
+
 	if (a->type == VAR_TYPE_NUMBER && b->type == VAR_TYPE_NUMBER) {
 		double* res = malloc(sizeof(double));
 		double a_val = *(double*)a->data;
