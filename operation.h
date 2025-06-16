@@ -1,5 +1,6 @@
 #pragma once
 #include <math.h>
+#include "mymath.h"
 #include "globals.h"
 #include "token.h"
 
@@ -7,6 +8,25 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 	if (a == NULL && b == NULL) {
 		return NULL;
 	}
+
+	if (a != NULL && b == NULL) {
+		if (a->type == VAR_TYPE_MATRIX) {
+			Matrix* res;
+			if (strsame(op, "'")) {
+				res = Matrix_transpose(a->data);
+			}
+			return Variable_new(VAR_TYPE_MATRIX, NULL, res);
+		}
+
+		else if (a->type == VAR_TYPE_NUMBER) {
+			double* res = malloc(sizeof(double));
+			if (strsame(op, "!")) {
+				*res = (double)factorial((unsigned int)*(double*)a->data);
+			}
+			return Variable_new(VAR_TYPE_NUMBER, NULL, res);
+		}
+		return NULL;
+	}		
 
 	if (a->type == VAR_TYPE_NUMBER && b->type == VAR_TYPE_NUMBER) {
 		double* res = malloc(sizeof(double));
@@ -76,6 +96,7 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 		}
 		return Variable_new(VAR_TYPE_MATRIX, NULL, res);
 	}
+
 	else if (a->type == VAR_TYPE_MATRIX && b->type == VAR_TYPE_MATRIX) {
 		Matrix* res;
 		if (strsame(op, "+")) {
@@ -94,6 +115,7 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 		return Variable_new(VAR_TYPE_MATRIX, NULL, res);
 	}
 
+	return NULL;
 }
 
 typedef enum {
@@ -235,29 +257,33 @@ int _TreeNode_split(struct TreeNode* node) {
 	}
 	// if operation was found, split expression into left and right children
 	// with operation in the middle as their parent
-	//printf("Chosen operation: %s\n", chosenOperation->str);
-	Token* leftToken = node->expr;
-	int leftLen = chosenOperation - leftToken;
-	//Token_print(leftToken);
-	//printf("leftLen: %d\n", leftLen);
-	node->left = _TreeNode_new(leftToken, leftLen);
-	Token* rightToken = chosenOperation + 1;
+	// Token_print(chosenOperation);
+	int leftLen = chosenOperation - node->expr;
 	int rightLen = node->exprLen + (node->expr - chosenOperation) - 1;
-	//Token_print(rightToken);
-	//printf("rightLen: %d\n", rightLen);
-	node->right = _TreeNode_new(rightToken, rightLen);
+	// printf("%d\n", leftLen);
+	// printf("%d\n", rightLen);
+
+	if (leftLen > 0) {
+		Token* leftToken = node->expr;
+		node->left = _TreeNode_new(leftToken, leftLen);
+		if(_TreeNode_split(node->left) == 1) return 1;
+	}
+	if (rightLen > 0) {
+		Token* rightToken = chosenOperation + 1;
+		node->right = _TreeNode_new(rightToken, rightLen);
+		if(_TreeNode_split(node->right) == 1) return 1;
+	}
 	node->expr = chosenOperation;
 	node->exprLen = 1;
-	if(_TreeNode_split(node->right) == 1) return 1;
-	if(_TreeNode_split(node->left) == 1) return 1;
 	return 0;
 }
 
 Variable* _TreeNode_evaluate(struct TreeNode* node) {
+	if (node == NULL) return NULL;
 	if (node->value) return node->value;
-	_TreeNode_evaluate(node->left);
-	_TreeNode_evaluate(node->right);
-	node->value = Operation_calculate(node->left->value, node->right->value, node->expr->str);
+	Variable* leftVal = _TreeNode_evaluate(node->left);
+	Variable* rightVal = _TreeNode_evaluate(node->right);
+	node->value = Operation_calculate(leftVal, rightVal, node->expr->str);
 	return node->value;
 }
 
