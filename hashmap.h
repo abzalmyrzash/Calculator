@@ -44,6 +44,9 @@ void HashMap_init(HashMap* mp, int capacity)
     // array of size = 1
     mp->arr = (struct HashMap_node**)malloc(sizeof(struct HashMap_node*)
                                     * mp->capacity);
+	for (int i = 0; i < mp->capacity; i++) {
+		mp->arr[i] = NULL;
+	}
     return;
 }
 

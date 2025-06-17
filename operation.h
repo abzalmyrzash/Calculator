@@ -21,7 +21,7 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 		else if (a->type == VAR_TYPE_NUMBER) {
 			double* res = malloc(sizeof(double));
 			if (strsame(op, "!")) {
-				*res = (double)factorial((unsigned int)*(double*)a->data);
+				*res = factorial(*(double*)a->data);
 			}
 			return Variable_new(VAR_TYPE_NUMBER, NULL, res);
 		}
