@@ -14,16 +14,25 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 			Matrix* res;
 			if (strsame(op, "'")) {
 				res = Matrix_transpose(a->data);
+				return Variable_new(VAR_TYPE_MATRIX, NULL, res);
 			}
-			return Variable_new(VAR_TYPE_MATRIX, NULL, res);
+			else {
+				printf("ERROR: Operation %s is invalid for a matrix!\n", op);
+				return NULL;
+			}
 		}
 
 		else if (a->type == VAR_TYPE_NUMBER) {
 			double* res = malloc(sizeof(double));
 			if (strsame(op, "!")) {
 				*res = factorial(*(double*)a->data);
+				return Variable_new(VAR_TYPE_NUMBER, NULL, res);
 			}
-			return Variable_new(VAR_TYPE_NUMBER, NULL, res);
+			else {
+				free(res);
+				printf("ERROR: Operation %s is invalid for a number!\n", op);
+				return NULL;
+			}
 		}
 		return NULL;
 	}		
@@ -71,6 +80,7 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 			*res = pow(a_val, b_val);
 		}
 		else {
+			free(res);
 			printf("ERROR: Operation %s is invalid for two numbers!\n", op);
 			return NULL;
 		}
