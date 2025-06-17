@@ -240,6 +240,14 @@ int process_tokens(Token* tokens, int len) {
 		}
 	}
 	else {
+		bool containsEqSign = false;
+		for (int i = 0; i < len; i++) {
+			if (strsame(tokens[i].str, "=")) {
+				containsEqSign = true;
+				break;
+			}
+		}
+		if (containsEqSign) return process_tokens_let(tokens, len);
 		return process_tokens_calc(tokens, len);
 	}
 	return 0;

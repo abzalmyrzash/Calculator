@@ -1,2 +1,2 @@
-main: main.c *.h
-	gcc main.c -o main -lm
+a.out: main.c *.h
+	gcc main.c -lm
