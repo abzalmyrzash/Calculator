@@ -6,6 +6,7 @@
 
 Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 	if (a == NULL && b == NULL) {
+		printf("ERROR: Operation with nothing!\n");
 		return NULL;
 	}
 
@@ -38,6 +39,29 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 	}		
 
 	if (a == NULL && b != NULL) {
+		if (b->type == VAR_TYPE_NUMBER) {
+			double* res = malloc(sizeof(double));
+			if(strsame(op, "-")) {
+				*res = -(*(double*)b->data);
+				return Variable_new(VAR_TYPE_NUMBER, NULL, res);
+			}
+			else {
+				free(res);
+				printf("ERROR: Operation %s is invalid for a number!\n", op);
+				return NULL;
+			}
+		}
+		if (b->type == VAR_TYPE_MATRIX) {
+			Matrix *res;
+			if(strsame(op, "-")) {
+				res = Matrix_scale(b->data, -1);
+				return Variable_new(VAR_TYPE_MATRIX, NULL, res);
+			}
+			else {
+				printf("ERROR: Operation %s is invalid for a matrix!\n", op);
+				return NULL;
+			}
+		}
 		return NULL;
 	}
 
@@ -332,13 +356,18 @@ void ExpressionTree_free(ExpressionTree* tree) {
 }
 
 void _TreeNode_print(struct TreeNode* node, int level) {
-	if(node == NULL) return;
 	for (int i = 0; i < level; i++) {
 		printf("\t");
 	}
+	if(node == NULL) {
+		printf("NULL\n");
+		return;
+	}
 	printf("%s\n", node->expr->str);
-	_TreeNode_print(node->left, level+1);
-	_TreeNode_print(node->right, level+1);
+	if (node->left != NULL || node->right != NULL) {
+		_TreeNode_print(node->left, level+1);
+		_TreeNode_print(node->right, level+1);
+	}
 }
 
 void ExpressionTree_print(ExpressionTree* tree) {
