@@ -146,7 +146,7 @@ Variable* Variable_set_name(Variable* var, char* name) {
 
 Variable* Variable_assign_data(Variable* dest, Variable* source) {
 	dest->type = source->type;
-	Variable_free_data(dest->data);
+	Variable_free_data(dest);
 	dest->data = Variable_copy_data(source);
 	return dest;
 }
