@@ -345,7 +345,9 @@ Variable* _TreeNode_evaluate(struct TreeNode* node) {
 	if (node == NULL) return NULL;
 	if (node->value) return node->value;
 	Variable* leftVal = _TreeNode_evaluate(node->left);
+	if (leftVal == NULL) return NULL;
 	Variable* rightVal = _TreeNode_evaluate(node->right);
+	if (rightVal == NULL) return NULL;
 	node->value = Operation_calculate(leftVal, rightVal, node->expr->str);
 	return node->value;
 }
@@ -366,6 +368,7 @@ int ExpressionTree_split(ExpressionTree* tree) {
 
 Variable* ExpressionTree_evaluate(ExpressionTree* tree) {
 	Variable* var = _TreeNode_evaluate(tree->root);
+	if (var == NULL) return NULL;
 	if (var->type == VAR_TYPE_PERCENT) {
 		double* res = malloc(sizeof(double));
 		*res = *(double*)var->data / 100;
