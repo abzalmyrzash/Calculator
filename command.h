@@ -1,9 +1,5 @@
 #pragma once
-#include "operation.h"
-#include "hashmap.h"
-#include "strfunctions.h"
-#include "token.h"
-#include "stack.h"
+#include "expression_tree.h"
 
 char* read_command_fgets(size_t bufsize) {
 	char* buffer = (char *)malloc(bufsize);
