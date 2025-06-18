@@ -4,6 +4,7 @@
 
 int main()
 {
+	printf("%d\n", sizeof(Matrix));
 	init_globals();
 	while(true) {
 		printf("> ");

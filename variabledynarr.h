@@ -8,15 +8,9 @@ void DynArrVar_print(void* data, int len) {
 	}
 }
 
-void* DynArrVar_copy(void* ptr) {
-	return Variable_copy(ptr);
-}
-
-void DynArrVar_free(void* ptr) {
-	Variable* var = (Variable*)ptr;
-	free(var->name);
-	Variable_free_data(var);
-}
-
-DynArrFunc DynArrVarFunc = {DynArrVar_print, DynArrVar_copy, DynArrVar_free};
+DynArrFunc DynArrVarFunc = {
+	DynArrVar_print,
+	Variable_copy_void_ptr, 
+	Variable_free_void_ptr
+};
 

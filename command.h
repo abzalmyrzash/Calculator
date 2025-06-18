@@ -121,14 +121,14 @@ int process_tokens_let(Token* tokens, int len) {
 	char* name = tokens[0].str;
 	if(strsame(tokens[2].str, "matrix")) {
 		process_tokens_matrix(tokens+3, len-3);
-		copy_var_with_name(memory, name);
+		copy_var_to_name(memory, name);
 	}
 	else {
 		if(strsame(tokens[2].str, "calc")) {
 			if(process_tokens_calc(tokens+3, len-3)) return 1;
 		}
 		if (process_tokens_calc(tokens+2, len-2)) return 1;
-		copy_var_with_name(memory, name);
+		copy_var_to_name(memory, name);
 	}
 	
 	return 0;
@@ -144,11 +144,7 @@ int process_tokens_save(Token* tokens, int len) {
 		return 1;
 	}
 	char* name = tokens[0].str;
-	if(str_find_in_list(name, special_tokens, SPECIAL_TOKENS_SIZE) != -1) {
-		printf("ERROR: Invalid name!\n");
-		return 1;
-	}
-	copy_var_with_name(memory, name);
+	copy_var_to_name(memory, name);
 	return 0;
 }
 
@@ -192,6 +188,11 @@ int process_tokens(Token* tokens, int len) {
 	if (special_index != -1) {
 		char* specialToken = special_tokens[special_index];
 		if (specialToken == "exit" || specialToken == "quit") {
+			HashMap_print(hashmap);
+			HashMap_free(hashmap, Variable_free_data_void_ptr);
+			for (int i = 0; i < len; i++) {
+				Token_free(tokens + i);
+			}
 			exit(0);
 		}
 		if (specialToken == "let") {

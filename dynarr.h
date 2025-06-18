@@ -30,7 +30,7 @@ void DynArrString_print(void* data, int len) {
 void* DynArrString_copy(void* ptr) {
 	char** strptr = ptr;
 	char** copyptr = malloc(sizeof(char*));
-	*copyptr = malloc(strlen(*strptr));
+	*copyptr = malloc(strlen(*strptr) + 1);
 	strcpy(*copyptr, *strptr);
 	return copyptr;
 }

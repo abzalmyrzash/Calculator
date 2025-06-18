@@ -176,3 +176,29 @@ void* HashMap_search(HashMap* mp, char* key)
     // equal to the given key
     return NULL;
 }
+
+void HashMap_free(HashMap* mp, void (*freeValue)(void*)) {
+	struct HashMap_node *bucketHead, *bucketHead2;
+	for (int i = 0; i < mp->capacity; i++) {
+    	bucketHead = mp->arr[i];
+		while (bucketHead != NULL) {
+			bucketHead2 = bucketHead;
+			bucketHead = bucketHead->next;
+			free(bucketHead2->key);
+			freeValue(bucketHead2->value);
+			free(bucketHead2);
+		}
+	}
+}
+
+void HashMap_print(HashMap* mp) {
+	struct HashMap_node *bucketHead;
+	for (int i = 0; i < mp->capacity; i++) {
+    	bucketHead = mp->arr[i];
+		printf("%d\n", i);
+		while (bucketHead != NULL) {
+			printf("%s\n", bucketHead->key);
+			bucketHead = bucketHead->next;
+		}
+	}
+}

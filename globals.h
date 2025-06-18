@@ -7,8 +7,10 @@ Variable* memory;
 
 void init_globals() {
 	hashmap = HashMap_new(8);
-	memory = Variable_new(VAR_TYPE_NULL, "mem", NULL);
-	HashMap_insert(hashmap, "mem", memory);
+	char* mem_name = malloc(4);
+	strcpy(mem_name, "mem");
+	memory = Variable_new(VAR_TYPE_NULL, mem_name, NULL);
+	HashMap_insert(hashmap, mem_name, memory);
 }
 
 Variable* get_var_by_name(char *name)
@@ -16,7 +18,7 @@ Variable* get_var_by_name(char *name)
 	return (Variable*)HashMap_search(hashmap, name);
 }
 
-Variable* copy_var_with_name(Variable* var, char *name)
+Variable* copy_var_to_name(Variable* var, char *name)
 {
 	Variable* oldVar = get_var_by_name(name); 
 	if(oldVar != NULL) {
@@ -24,7 +26,7 @@ Variable* copy_var_with_name(Variable* var, char *name)
 		Variable_free(oldVar);
 	}
 	Variable* copy = Variable_copy(var);
-	Variable_change_name(copy, name);
+	Variable_set_name(copy, name);
 	HashMap_insert(hashmap, copy->name, copy);
 	return copy;
 }

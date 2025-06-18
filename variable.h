@@ -131,7 +131,7 @@ void Variable_free(Variable* var) {
 	free(var);
 }
 
-Variable* Variable_change_name(Variable* var, char* name) {
+Variable* Variable_set_name(Variable* var, char* name) {
 	free(var->name);
 	char* name_permanent = malloc(strlen(name)+1);
 	strcpy(name_permanent, name);
@@ -158,3 +158,18 @@ void Variable_assign_matrix(Variable* var, Matrix* matrix) {
 	var->type = VAR_TYPE_MATRIX;
 	var->data = matrix;
 }
+
+void* Variable_copy_void_ptr(void* ptr) {
+	return Variable_copy(ptr);
+}
+
+void Variable_free_void_ptr(void* ptr) {
+	Variable* var = (Variable*)ptr;
+	free(var->name);
+	Variable_free_data(var);
+}
+
+void Variable_free_data_void_ptr(void* ptr) {
+	Variable_free_data(ptr);
+}
+
