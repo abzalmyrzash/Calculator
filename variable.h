@@ -9,15 +9,17 @@ typedef enum {
 	VAR_TYPE_NUMBER,
 	VAR_TYPE_PERCENT,
 	VAR_TYPE_MATRIX,
-	VAR_TYPE_VECTOR
+	VAR_TYPE_VECTOR,
+	VAR_TYPE_ERROR
 } VariableType;
 
-char* variableTypeStrArr[5] = {
+char* variableTypeStrArr[] = {
 	"NULL",
 	"NUMBER",
 	"PERCENT",
 	"MATRIX",
-	"VECTOR"
+	"VECTOR",
+	"ERROR"
 };
 
 typedef struct {
@@ -60,6 +62,8 @@ void Variable_print(Variable* var, bool withTypeName) {
 	case VAR_TYPE_PERCENT:
 		printf("%g%\n", *(double*)var->data);
 		break;
+	case VAR_TYPE_ERROR:
+		printf("%s%\n", (char*)var->data);
 	default:
 		printf("BUG: IMPOSSIBLE VARIABLE TYPE!\n");
 		break;

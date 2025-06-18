@@ -117,8 +117,7 @@ int process_tokens_calc(Token* tokens, int len) {
 	}
 	ExpressionTree_print(tree);
 	Variable* res = ExpressionTree_evaluate(tree);
-	if (res == NULL) {
-		printf("ERROR: Failed to evaluate!\n");
+	if (res == NULL || res->type == VAR_TYPE_ERROR) {
 		return 1;
 	}
 	Variable_free_data(memory);

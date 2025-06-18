@@ -19,7 +19,7 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 			}
 			else {
 				printf("ERROR: Operation %s is invalid for a matrix!\n", op);
-				return NULL;
+				return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 			}
 		}
 
@@ -36,7 +36,7 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 			else {
 				free(res);
 				printf("ERROR: Operation %s is invalid for a number!\n", op);
-				return NULL;
+				return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 			}
 		}
 		return NULL;
@@ -52,7 +52,7 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 			else {
 				free(res);
 				printf("ERROR: Operation %s is invalid for a number!\n", op);
-				return NULL;
+				return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 			}
 		}
 		if (b->type == VAR_TYPE_MATRIX) {
@@ -63,7 +63,7 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 			}
 			else {
 				printf("ERROR: Operation %s is invalid for a matrix!\n", op);
-				return NULL;
+				return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 			}
 		}
 		return NULL;
@@ -85,7 +85,7 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 		else if (strsame(op, "/")) {
 			if (b_val == 0) {
 				printf("ERROR: Division by zero!\n");
-				return NULL;
+				return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 			}
 			*res = a_val / b_val;
 		}
@@ -93,14 +93,14 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 		else if (strsame(op, "//")) {
 			if (b_val == 0) {
 				printf("ERROR: Division by zero!\n");
-				return NULL;
+				return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 			}
 			*res = floor(a_val / b_val);
 		}
 		else if (strsame(op, "%%")) {
 			if (b_val == 0) {
 				printf("ERROR: Division by zero!\n");
-				return NULL;
+				return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 			}
 			*res = a_val - b_val * floor(a_val / b_val);
 		}
@@ -110,7 +110,7 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 		else {
 			free(res);
 			printf("ERROR: Operation %s is invalid for two numbers!\n", op);
-			return NULL;
+			return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 		}
 		return Variable_new(VAR_TYPE_NUMBER, NULL, res);
 	}
@@ -122,7 +122,7 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 		}
 		else {
 			printf("ERROR: Operation %s is invalid for a number and matrix!\n", op);
-			return NULL;
+			return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 		}
 		return Variable_new(VAR_TYPE_MATRIX, NULL, res);
 	}
@@ -134,7 +134,7 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 		}
 		else {
 			printf("ERROR: Operation %s is invalid for a matrix and number!\n", op);
-			return NULL;
+			return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 		}
 		return Variable_new(VAR_TYPE_MATRIX, NULL, res);
 	}
@@ -152,7 +152,7 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 		}
 		else {
 			printf("ERROR: Operation %s is invalid for two matrices!\n", op);
-			return NULL;
+			return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 		}
 		return Variable_new(VAR_TYPE_MATRIX, NULL, res);
 	}
@@ -178,7 +178,7 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 	}
 
 	printf("ERROR: Invalid operation!\n");
-	return NULL;
+	return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 }
 
 typedef enum {
@@ -345,9 +345,9 @@ Variable* _TreeNode_evaluate(struct TreeNode* node) {
 	if (node == NULL) return NULL;
 	if (node->value) return node->value;
 	Variable* leftVal = _TreeNode_evaluate(node->left);
-	if (leftVal == NULL) return NULL;
+	if (leftVal != NULL && leftVal->type == VAR_TYPE_ERROR) return leftVal;
 	Variable* rightVal = _TreeNode_evaluate(node->right);
-	if (rightVal == NULL) return NULL;
+	if (rightVal != NULL && rightVal->type == VAR_TYPE_ERROR) return rightVal;
 	node->value = Operation_calculate(leftVal, rightVal, node->expr->str);
 	return node->value;
 }
@@ -368,7 +368,7 @@ int ExpressionTree_split(ExpressionTree* tree) {
 
 Variable* ExpressionTree_evaluate(ExpressionTree* tree) {
 	Variable* var = _TreeNode_evaluate(tree->root);
-	if (var == NULL) return NULL;
+	if (var == NULL || var->type == VAR_TYPE_ERROR) return var;
 	if (var->type == VAR_TYPE_PERCENT) {
 		double* res = malloc(sizeof(double));
 		*res = *(double*)var->data / 100;
