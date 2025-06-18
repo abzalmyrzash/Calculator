@@ -6,8 +6,8 @@
 
 Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 	if (a == NULL && b == NULL) {
-		printf("ERROR: Operation with nothing!\n");
-		return NULL;
+		printf("ERROR: Operation %s with nothing!\n", op);
+		return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 	}
 
 	if (a != NULL && b == NULL) {
@@ -253,6 +253,14 @@ struct TreeNode* _TreeNode_new(Token* token, int exprLen) {
 	return node;
 }
 
+void _TreeNode_free(struct TreeNode* node) {
+	if(node == NULL) return;
+	_TreeNode_free(node->left);
+	_TreeNode_free(node->right);
+	Variable_free(node->value);
+	free(node);
+}
+
 int _TreeNode_split(struct TreeNode* node) {
 	Token* chosenOperation = NULL; // the operation token where the split happens
 	// chosen operation must have minimum bracketLevel and priority
@@ -312,10 +320,7 @@ int _TreeNode_split(struct TreeNode* node) {
 				break;
 			}
 		}
-		if (node->value == NULL) {
-			printf("ERROR: failed to assign value to tree leaf!\n");
-			return 1;
-		}
+		if (node->value == NULL) return 1;
 		return 0;
 	}
 	// if operation was found, split expression into left and right children
@@ -329,12 +334,18 @@ int _TreeNode_split(struct TreeNode* node) {
 	if (leftLen > 0) {
 		Token* leftToken = node->expr;
 		node->left = _TreeNode_new(leftToken, leftLen);
-		if(_TreeNode_split(node->left) == 1) return 1;
+		if(_TreeNode_split(node->left) == 1) {
+			_TreeNode_free(node->left);
+			node->left = NULL;
+		}
 	}
 	if (rightLen > 0) {
 		Token* rightToken = chosenOperation + 1;
 		node->right = _TreeNode_new(rightToken, rightLen);
-		if(_TreeNode_split(node->right) == 1) return 1;
+		if(_TreeNode_split(node->right) == 1) {
+			_TreeNode_free(node->right);
+			node->right = NULL;
+		}
 	}
 	node->expr = chosenOperation;
 	node->exprLen = 1;
@@ -343,7 +354,7 @@ int _TreeNode_split(struct TreeNode* node) {
 
 Variable* _TreeNode_evaluate(struct TreeNode* node) {
 	if (node == NULL) return NULL;
-	if (node->value) return node->value;
+	if (node->value != NULL) return node->value;
 	Variable* leftVal = _TreeNode_evaluate(node->left);
 	if (leftVal != NULL && leftVal->type == VAR_TYPE_ERROR) return leftVal;
 	Variable* rightVal = _TreeNode_evaluate(node->right);
@@ -376,14 +387,6 @@ Variable* ExpressionTree_evaluate(ExpressionTree* tree) {
 		return Variable_new(VAR_TYPE_NUMBER, NULL, res);
 	}
 	return var;
-}
-
-void _TreeNode_free(struct TreeNode* node) {
-	if(node == NULL) return;
-	_TreeNode_free(node->left);
-	_TreeNode_free(node->right);
-	Variable_free(node->value);
-	free(node);
 }
 
 void ExpressionTree_free(ExpressionTree* tree) {
