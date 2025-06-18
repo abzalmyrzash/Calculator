@@ -7,13 +7,17 @@
 typedef enum {
 	VAR_TYPE_NULL,
 	VAR_TYPE_NUMBER,
-	VAR_TYPE_MATRIX
+	VAR_TYPE_PERCENT,
+	VAR_TYPE_MATRIX,
+	VAR_TYPE_VECTOR
 } VariableType;
 
-char* variableTypeStrArr[3] = {
+char* variableTypeStrArr[5] = {
 	"NULL",
 	"NUMBER",
-	"MATRIX"
+	"PERCENT",
+	"MATRIX",
+	"VECTOR"
 };
 
 typedef struct {
@@ -52,6 +56,9 @@ void Variable_print(Variable* var, bool withTypeName) {
 		break;
 	case VAR_TYPE_NUMBER:
 		printf("%g\n", *(double*)var->data);
+		break;
+	case VAR_TYPE_PERCENT:
+		printf("%g%\n", *(double*)var->data);
 		break;
 	default:
 		printf("BUG: IMPOSSIBLE VARIABLE TYPE!\n");
@@ -104,6 +111,7 @@ void Variable_free_data(Variable* var) {
 		Matrix_free(var->data);
 		break;
 	case VAR_TYPE_NUMBER:
+	case VAR_TYPE_PERCENT:
 		free(var->data);
 		break;
 	default:

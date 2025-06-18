@@ -29,6 +29,10 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 				*res = factorial(*(double*)a->data);
 				return Variable_new(VAR_TYPE_NUMBER, NULL, res);
 			}
+			if(strsame(op, "%")) {
+				*res = *(double*)a->data;
+				return Variable_new(VAR_TYPE_PERCENT, NULL, res);
+			}
 			else {
 				free(res);
 				printf("ERROR: Operation %s is invalid for a number!\n", op);
@@ -153,6 +157,27 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 		return Variable_new(VAR_TYPE_MATRIX, NULL, res);
 	}
 
+	if (a->type == VAR_TYPE_NUMBER && b->type == VAR_TYPE_PERCENT) {
+		double *res = malloc(sizeof(double));
+		double number = *(double*)a->data;
+		double percent = *(double*)b->data;
+		if (strsame(op, "+")) {
+			*res = number * (1 + percent/100);
+		}
+		else if (strsame(op, "-")) {
+			*res = number * (1 - percent/100);
+		}
+		else {
+			double b_num = percent/100;
+			Variable* b_numvar = Variable_new(VAR_TYPE_NUMBER, NULL, &b_num);
+			Variable* var = Operation_calculate(a, b_numvar, op);
+			free(b_numvar);
+			return var;
+		}
+		return Variable_new(VAR_TYPE_NUMBER, NULL, res);
+	}
+
+	printf("ERROR: Invalid operation!\n");
 	return NULL;
 }
 
@@ -170,7 +195,7 @@ typedef enum {
 char* addSubList[] = {"+", "-"};
 char* multDivList[] = {"*", "/", "//", "%%"};
 char* expList[] = {"^"};
-char* unaryList[] = {"%", "!", "'", "~"};
+char* unaryList[] = {"%", "!", "'", "~", "++", "--"};
 char* orList[] = {"||"};
 char* andList[] = {"&&"};
 char* eqOrNotList[] = {"==", "~="};
@@ -340,7 +365,14 @@ int ExpressionTree_split(ExpressionTree* tree) {
 }
 
 Variable* ExpressionTree_evaluate(ExpressionTree* tree) {
-	return _TreeNode_evaluate(tree->root);
+	Variable* var = _TreeNode_evaluate(tree->root);
+	if (var->type == VAR_TYPE_PERCENT) {
+		double* res = malloc(sizeof(double));
+		*res = *(double*)var->data / 100;
+		Variable_free(var);
+		return Variable_new(VAR_TYPE_NUMBER, NULL, res);
+	}
+	return var;
 }
 
 void _TreeNode_free(struct TreeNode* node) {
