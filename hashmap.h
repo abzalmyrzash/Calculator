@@ -189,6 +189,8 @@ void HashMap_free(HashMap* mp, void (*freeValue)(void*)) {
 			free(bucketHead2);
 		}
 	}
+	free(mp->arr);
+	free(mp);
 }
 
 void HashMap_print(HashMap* mp) {

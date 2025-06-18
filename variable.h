@@ -101,12 +101,6 @@ Variable* Variable_copy(Variable* var) {
 	return copy;
 }
 
-Variable* Variable_assign_data(Variable* dest, Variable* source) {
-	dest->type = source->type;
-	dest->data = Variable_copy_data(source);
-	return dest;
-}
-	
 void Variable_free_data(Variable* var) {
 	if (var == NULL || var->data == NULL) return;
 	switch(var->type) {
@@ -124,10 +118,21 @@ void Variable_free_data(Variable* var) {
 	}
 }
 
-void Variable_free(Variable* var) {
+void Variable_free_data_name(Variable* var) {
 	if (var == NULL) return;
 	Variable_free_data(var);
 	free(var->name);
+}
+
+void Variable_free(Variable* var) {
+	if (var == NULL) return;
+	Variable_free_data_name(var);
+	free(var);
+}
+
+void Variable_free_except_name(Variable* var) {
+	if (var == NULL) return;
+	Variable_free_data(var);
 	free(var);
 }
 
@@ -139,6 +144,13 @@ Variable* Variable_set_name(Variable* var, char* name) {
 	return var;
 }
 
+Variable* Variable_assign_data(Variable* dest, Variable* source) {
+	dest->type = source->type;
+	Variable_free_data(dest->data);
+	dest->data = Variable_copy_data(source);
+	return dest;
+}
+	
 void Variable_assign_number(Variable* var, double* number) {
 	if(var == NULL) {
 		var = (Variable*)malloc(sizeof(Variable));
@@ -164,12 +176,17 @@ void* Variable_copy_void_ptr(void* ptr) {
 }
 
 void Variable_free_void_ptr(void* ptr) {
-	Variable* var = (Variable*)ptr;
-	free(var->name);
-	Variable_free_data(var);
+	Variable_free(ptr);
 }
 
 void Variable_free_data_void_ptr(void* ptr) {
 	Variable_free_data(ptr);
 }
 
+void Variable_free_data_name_void_ptr(void* ptr) {
+	Variable_free_data_name(ptr);
+}
+
+void Variable_free_except_name_void_ptr(void* ptr) {
+	Variable_free_except_name(ptr);
+}

@@ -51,7 +51,6 @@ int process_tokens_calc(Token* tokens, int len) {
 	Matrix* prev;
 	int cnt_bracket1 = 0;
 	int cnt_bracket2 = 0;
-	Stack* bracketStack = Stack_new();
 	for (int i = 0; i < len; i++) {
 		Token t = tokens[i];
 		switch(t.type) {
@@ -90,14 +89,15 @@ int process_tokens_calc(Token* tokens, int len) {
 	}
 	ExpressionTree* tree = ExpressionTree_new(tokens, len);
 	if (ExpressionTree_split(tree) == 1) {
+		ExpressionTree_free(tree);
 		return 1;
 	}
 	ExpressionTree_print(tree);
 	Variable* res = ExpressionTree_evaluate(tree);
 	if (res == NULL || res->type == VAR_TYPE_ERROR) {
+		ExpressionTree_free(tree);
 		return 1;
 	}
-	Variable_free_data(memory);
 	Variable_assign_data(memory, res);
 	Variable_print(res, false);
 	ExpressionTree_free(tree);
@@ -188,12 +188,8 @@ int process_tokens(Token* tokens, int len) {
 	if (special_index != -1) {
 		char* specialToken = special_tokens[special_index];
 		if (specialToken == "exit" || specialToken == "quit") {
-			HashMap_print(hashmap);
-			HashMap_free(hashmap, Variable_free_data_void_ptr);
-			for (int i = 0; i < len; i++) {
-				Token_free(tokens + i);
-			}
-			exit(0);
+			quit = true;
+			return 0;
 		}
 		if (specialToken == "let") {
 			return process_tokens_let(tokens+1, len-1);

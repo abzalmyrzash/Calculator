@@ -4,6 +4,7 @@
 
 HashMap* hashmap;
 Variable* memory;
+bool quit = false;
 
 void init_globals() {
 	hashmap = HashMap_new(8);
@@ -11,6 +12,10 @@ void init_globals() {
 	strcpy(mem_name, "mem");
 	memory = Variable_new(VAR_TYPE_NULL, mem_name, NULL);
 	HashMap_insert(hashmap, mem_name, memory);
+}
+
+void free_globals() {
+	HashMap_free(hashmap, Variable_free_except_name_void_ptr);
 }
 
 Variable* get_var_by_name(char *name)

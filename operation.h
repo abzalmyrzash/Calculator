@@ -428,6 +428,7 @@ Variable* ExpressionTree_evaluate(ExpressionTree* tree) {
 
 void ExpressionTree_free(ExpressionTree* tree) {
 	_TreeNode_free(tree->root);
+	free(tree);
 }
 
 void _TreeNode_print(struct TreeNode* node, int level) {
