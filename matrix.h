@@ -22,7 +22,7 @@ Matrix* Matrix_new(int N, int M)
 	}
 	matrix->N = N;
 	matrix->M = M;
-	matrix->val = malloc(N * M * sizeof(double));
+	matrix->val = calloc(N * M, sizeof(double));
 	if (matrix->val == NULL) {
 		perror("Failed to allocate matrix values");
 		exit(1);
