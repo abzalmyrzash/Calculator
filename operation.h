@@ -11,19 +11,12 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 	}
 
 	if (a != NULL && b == NULL) {
-		if (a->type == VAR_TYPE_MATRIX) {
-			Matrix* res;
-			if (strsame(op, "'")) {
-				res = Matrix_transpose(a->data);
-				return Variable_new(VAR_TYPE_MATRIX, NULL, res);
-			}
-			else {
-				printf("ERROR: Operation %s is invalid for a matrix!\n", op);
-				return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
-			}
+		if (a->type == VAR_TYPE_PERCENT) {
+			a->type = VAR_TYPE_NUMBER;
+			*(double*)a->data /= 100;
 		}
 
-		else if (a->type == VAR_TYPE_NUMBER) {
+		if (a->type == VAR_TYPE_NUMBER) {
 			if(a->name != NULL) {
 				Variable* var = HashMap_search(hashmap, a->name);
 				if(strsame(op, "++")) {
@@ -50,11 +43,29 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 				return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 			}
 		}
+
+		else if (a->type == VAR_TYPE_MATRIX) {
+			Matrix* res;
+			if (strsame(op, "'")) {
+				res = Matrix_transpose(a->data);
+				return Variable_new(VAR_TYPE_MATRIX, NULL, res);
+			}
+			else {
+				printf("ERROR: Operation %s is invalid for a matrix!\n", op);
+				return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
+			}
+		}
+
 		printf("ERROR: Invalid variable type!\n");
 		return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 	}		
 
 	if (a == NULL && b != NULL) {
+		if (b->type == VAR_TYPE_PERCENT) {
+			b->type = VAR_TYPE_NUMBER;
+			*(double*)b->data /= 100;
+		}
+
 		if (b->type == VAR_TYPE_NUMBER) {
 			if(b->name != NULL) {
 				Variable* var = HashMap_search(hashmap, b->name);
@@ -78,7 +89,7 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 				return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 			}
 		}
-		if (b->type == VAR_TYPE_MATRIX) {
+		else if (b->type == VAR_TYPE_MATRIX) {
 			Matrix *res;
 			if(strsame(op, "-")) {
 				res = Matrix_scale(b->data, -1);
@@ -204,6 +215,7 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 		*(double*)a->data /= 100;
 		return Operation_calculate(a, b, op);
 	}
+
 	printf("ERROR: Invalid variable type!\n");
 	return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 }
