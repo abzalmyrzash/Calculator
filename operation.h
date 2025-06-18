@@ -181,7 +181,7 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 		return Variable_new(VAR_TYPE_MATRIX, NULL, res);
 	}
 
-	if (a->type == VAR_TYPE_NUMBER && b->type == VAR_TYPE_PERCENT) {
+	else if (a->type == VAR_TYPE_NUMBER && b->type == VAR_TYPE_PERCENT) {
 		double *res = malloc(sizeof(double));
 		double number = *(double*)a->data;
 		double percent = *(double*)b->data;
@@ -192,15 +192,18 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 			*res = number * (1 - percent/100);
 		}
 		else {
-			double b_num = percent/100;
-			Variable* b_numvar = Variable_new(VAR_TYPE_NUMBER, NULL, &b_num);
-			Variable* var = Operation_calculate(a, b_numvar, op);
-			free(b_numvar);
-			return var;
+			b->type = VAR_TYPE_NUMBER;
+			*(double*)b->data /= 100;
+			return Operation_calculate(a, b, op);
 		}
 		return Variable_new(VAR_TYPE_NUMBER, NULL, res);
 	}
 
+	else if (a->type == VAR_TYPE_PERCENT) {
+		a->type = VAR_TYPE_NUMBER;
+		*(double*)a->data /= 100;
+		return Operation_calculate(a, b, op);
+	}
 	printf("ERROR: Invalid variable type!\n");
 	return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 }
@@ -405,10 +408,8 @@ Variable* ExpressionTree_evaluate(ExpressionTree* tree) {
 	Variable* var = _TreeNode_evaluate(tree->root);
 	if (var == NULL || var->type == VAR_TYPE_ERROR) return var;
 	if (var->type == VAR_TYPE_PERCENT) {
-		double* res = malloc(sizeof(double));
-		*res = *(double*)var->data / 100;
-		Variable_free(var);
-		return Variable_new(VAR_TYPE_NUMBER, NULL, res);
+		var->type = VAR_TYPE_NUMBER;
+		*(double*)var->data /= 100;
 	}
 	return var;
 }

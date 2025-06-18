@@ -88,11 +88,7 @@ int process_tokens_calc(Token* tokens, int len) {
 		printf("ERROR: Non-matching brackets!\n");
 		return 1;
 	}
-	if(tree != NULL) {
-		ExpressionTree_print(tree);
-		ExpressionTree_free(tree);
-	}
-	tree = ExpressionTree_new(tokens, len);
+	ExpressionTree* tree = ExpressionTree_new(tokens, len);
 	if (ExpressionTree_split(tree) == 1) {
 		return 1;
 	}
@@ -104,6 +100,7 @@ int process_tokens_calc(Token* tokens, int len) {
 	Variable_free_data(memory);
 	Variable_assign_data(memory, res);
 	Variable_print(res, false);
+	ExpressionTree_free(tree);
 	
 	return 0;
 }
