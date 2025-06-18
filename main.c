@@ -1,4 +1,3 @@
-#include "calculator.h"
 #include "command.h"
 
 #define COMMAND_LENGTH 256
