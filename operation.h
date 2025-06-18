@@ -24,6 +24,17 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 		}
 
 		else if (a->type == VAR_TYPE_NUMBER) {
+			if(a->name != NULL) {
+				Variable* var = HashMap_search(hashmap, a->name);
+				if(strsame(op, "++")) {
+					*(double*)var->data = *(double*)a->data + 1;
+					return Variable_copy(a);
+				}
+				else if(strsame(op, "--")) {
+					*(double*)var->data = *(double*)a->data - 1;
+					return Variable_copy(a);
+				}
+			}
 			double* res = malloc(sizeof(double));
 			if (strsame(op, "!")) {
 				*res = factorial(*(double*)a->data);
@@ -39,11 +50,23 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 				return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 			}
 		}
-		return NULL;
+		printf("ERROR: Invalid variable type!\n");
+		return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 	}		
 
 	if (a == NULL && b != NULL) {
 		if (b->type == VAR_TYPE_NUMBER) {
+			if(b->name != NULL) {
+				Variable* var = HashMap_search(hashmap, b->name);
+				if(strsame(op, "++")) {
+					*(double*)var->data = *(double*)b->data + 1;
+					return Variable_copy(var);
+				}
+				else if(strsame(op, "--")) {
+					*(double*)var->data = *(double*)b->data - 1;
+					return Variable_copy(var);
+				}
+			}
 			double* res = malloc(sizeof(double));
 			if(strsame(op, "-")) {
 				*res = -(*(double*)b->data);
@@ -66,7 +89,8 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 				return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 			}
 		}
-		return NULL;
+		printf("ERROR: Invalid variable type!\n");
+		return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 	}
 
 	if (a->type == VAR_TYPE_NUMBER && b->type == VAR_TYPE_NUMBER) {
@@ -177,7 +201,7 @@ Variable* Operation_calculate(Variable* a, Variable* b, char* op) {
 		return Variable_new(VAR_TYPE_NUMBER, NULL, res);
 	}
 
-	printf("ERROR: Invalid operation!\n");
+	printf("ERROR: Invalid variable type!\n");
 	return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 }
 
