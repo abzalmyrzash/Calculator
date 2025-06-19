@@ -1,7 +1,7 @@
 #pragma once
 #include "expression_tree.h"
 
-char* read_command_fgets(size_t bufsize) {
+char* read_command(size_t bufsize) {
 	char* buffer = (char *)malloc(bufsize);
 	if (fgets(buffer, bufsize, stdin) == NULL) {
 		perror("Failed to fgets");
@@ -224,13 +224,7 @@ int process_tokens(Token* tokens, int len) {
 }
 
 int process_command(char* command) {
-	DynArr* words = split_by_space(command);
-	if (words->len == 0) {
-		DynArr_free(words);
-		return 1;
-	}
-	DynArr* tokens = split_into_tokens(words->data, words->len);
-	DynArr_free(words);
+	DynArr* tokens = split_into_tokens(command);
 	if (tokens == NULL) return 1;
 	if (!validate_tokens(tokens->data, tokens->len)) {
 		DynArr_free(tokens);

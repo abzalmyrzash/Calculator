@@ -2,8 +2,8 @@
 #include "matrix.h"
 #include "dynarr.h"
 
-void _DynArrMatrix_print(void* data, int len) {
-	for(int i = 0; i < len; i++) {
+void _DynArrMatrix_print(void* data, size_t len) {
+	for(size_t i = 0; i < len; i++) {
 		Matrix_print((Matrix*)data + len);
 	}
 }
