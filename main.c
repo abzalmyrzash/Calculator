@@ -5,13 +5,14 @@
 int main()
 {
 	init_globals();
+	char* command = malloc(COMMAND_LENGTH);
 	while(true) {
 		printf("> ");
-		char *command = read_command(COMMAND_LENGTH);
+		read_command(command, COMMAND_LENGTH);
 		process_command(command);
-		free(command);
 		if (quit) {
 			free_globals();
+			free(command);
 			break;
 		}
 	}

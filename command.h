@@ -1,13 +1,11 @@
 #pragma once
 #include "expression_tree.h"
 
-char* read_command(size_t bufsize) {
-	char* buffer = (char *)malloc(bufsize);
+void read_command(char* buffer, size_t bufsize) {
 	if (fgets(buffer, bufsize, stdin) == NULL) {
 		perror("Failed to fgets");
 	}
 	strtok(buffer, "\n");
-	return buffer;
 }
 
 ExpressionTree *tree = NULL;
