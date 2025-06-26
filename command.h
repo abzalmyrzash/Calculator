@@ -3,7 +3,8 @@
 
 void read_command(char* buffer, size_t bufsize) {
 	if (fgets(buffer, bufsize, stdin) == NULL) {
-		perror("Failed to fgets");
+		printf("\n");
+		exit(1);
 	}
 	strtok(buffer, "\n");
 }
