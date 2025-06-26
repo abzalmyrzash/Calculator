@@ -60,19 +60,19 @@ DynArrFunc DynArrTokenFunc = {
 	DynArrToken_free
 };
 
-#define NUM_OPERATIONS 21
+#define NUM_OPERATIONS 22
 #define NUM_SINGLE_CHAR_OPS 11
-#define NUM_DOUBLE_CHAR_OPS 10
+#define NUM_DOUBLE_CHAR_OPS 11
 
 char* operations[NUM_OPERATIONS] = {
 	"+", "-", "*", "/", "%", "^", "!", "'", ">", "<", "~"
-	"++", "--", "//", "%%", "==", "~=", ">=", "<=", "&&", "||",
+	"++", "--", "**", "//", "%%", "==", "~=", ">=", "<=", "&&", "||",
 };
 
 char* single_char_ops = "+-*/%^!'><~";
 
 char* double_char_ops[NUM_DOUBLE_CHAR_OPS] = {
-	"++", "--", "//", "%%", "==", "~=", ">=", "<=", "&&", "||"
+	"++", "--", "**", "//", "%%", "==", "~=", ">=", "<=", "&&", "||"
 };
 
 int str_is_op_len(char* str) {

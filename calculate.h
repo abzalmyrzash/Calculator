@@ -184,8 +184,14 @@ Variable* calculate(Variable* a, Variable* b, char* op) {
 		else if (strsame(op, "*")) {
 			res = Matrix_multiply(a->data, b->data);
 		}
+		else if (strsame(op, "**")) {
+			res = Matrix_kronecker(a->data, b->data);
+		}
 		else {
 			printf("ERROR: Operation %s is invalid for two matrices!\n", op);
+			return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
+		}
+		if (res == NULL) {
 			return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 		}
 		return Variable_new(VAR_TYPE_MATRIX, NULL, res);

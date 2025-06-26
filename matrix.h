@@ -67,7 +67,7 @@ void Matrix_print(Matrix* A)
 	printf("{\n");
 	for (int i = 0; i < A->N; i++) {
 		for (int j = 0; j < A->M; j++) {
-			printf("%g ", *Matrix_at(A, i, j));
+			printf("%g\t", *Matrix_at(A, i, j));
 		}
 		printf("\n");
 	}
@@ -144,3 +144,17 @@ Matrix* Matrix_transpose(Matrix* A) {
 	return B;
 }
 
+Matrix* Matrix_kronecker(Matrix* A, Matrix* B) {
+	Matrix* C = Matrix_new(A->N * B->N, A->M * B->M);
+	for (int i = 0; i < A->N; i++) {
+		for (int j = 0; j < A->M; j++) {
+			for (int k = 0; k < B->N; k++) {
+				for (int l = 0; l < B->M; l++) {
+					*Matrix_at(C, i * B->N + k, j * B->M + l) =
+						*Matrix_at(A, i, j) * *Matrix_at(B, k, l);
+				}
+			}
+		}
+	}
+	return C;
+}
