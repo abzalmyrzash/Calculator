@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "matrix.h"
+#include "vector.h"
+#include "dynarr.h"
 
 typedef enum {
 	VAR_TYPE_NULL,
@@ -10,6 +12,7 @@ typedef enum {
 	VAR_TYPE_PERCENT,
 	VAR_TYPE_MATRIX,
 	VAR_TYPE_VECTOR,
+	VAR_TYPE_LIST,
 	VAR_TYPE_ERROR
 } VariableType;
 
@@ -19,6 +22,7 @@ char* variableTypeStrArr[] = {
 	"PERCENT",
 	"MATRIX",
 	"VECTOR",
+	"LIST",
 	"ERROR"
 };
 
@@ -56,11 +60,17 @@ void Variable_print(Variable* var, bool withTypeName) {
 	case VAR_TYPE_MATRIX:
 		Matrix_print(var->data);
 		break;
+	case VAR_TYPE_VECTOR:
+		Vector_print(var->data);
+		break;
 	case VAR_TYPE_NUMBER:
 		printf("%g\n", *(double*)var->data);
 		break;
 	case VAR_TYPE_PERCENT:
 		printf("%g%\n", *(double*)var->data);
+		break;
+	case VAR_TYPE_LIST:
+		DynArr_print(var->data);
 		break;
 	case VAR_TYPE_ERROR:
 		printf("%s%\n", (char*)var->data);
@@ -82,6 +92,12 @@ void* Variable_copy_data(Variable* var) {
 			break;
 		case VAR_TYPE_MATRIX:
 			copy_data = Matrix_copy(var->data);
+			break;
+		case VAR_TYPE_VECTOR:
+			copy_data = Vector_copy(var->data);
+			break;
+		case VAR_TYPE_LIST:
+			copy_data = DynArr_copy(var->data);
 			break;
 		default:
 			printf("BUG: IMPOSSIBLE VARIABLE TYPE!\n");
@@ -108,12 +124,17 @@ void Variable_free_data(Variable* var) {
 	case VAR_TYPE_MATRIX:
 		Matrix_free(var->data);
 		break;
+	case VAR_TYPE_VECTOR:
+		Vector_free(var->data);
+		break;
 	case VAR_TYPE_NUMBER:
 	case VAR_TYPE_PERCENT:
 		free(var->data);
 		break;
+	case VAR_TYPE_LIST:
+		DynArr_free(var->data);
+		break;
 	default:
-		printf("BUG IN Variable_free_data: IMPOSSIBLE VARIABLE TYPE!\n");
 		break;
 	}
 }
@@ -145,8 +166,8 @@ Variable* Variable_set_name(Variable* var, char* name) {
 }
 
 Variable* Variable_assign_data(Variable* dest, Variable* source) {
-	dest->type = source->type;
 	Variable_free_data(dest);
+	dest->type = source->type;
 	dest->data = Variable_copy_data(source);
 	return dest;
 }
@@ -171,6 +192,16 @@ void Variable_assign_matrix(Variable* var, Matrix* matrix) {
 	var->data = matrix;
 }
 
+void Variable_assign_vector(Variable* var, Vector* vector) {
+	if (var == NULL) {
+		var = (Variable*)malloc(sizeof(Variable));
+	} else {
+		Variable_free_data(var);
+	}
+	var->type = VAR_TYPE_VECTOR;
+	var->data = vector;
+}
+
 void* Variable_copy_void_ptr(void* ptr) {
 	return Variable_copy(ptr);
 }
@@ -190,3 +221,19 @@ void Variable_free_data_name_void_ptr(void* ptr) {
 void Variable_free_except_name_void_ptr(void* ptr) {
 	Variable_free_except_name(ptr);
 }
+
+//////////////////////////////////////////
+
+void DynArrVar_print(void* data, size_t len) {
+	printf("%d\n", len);
+	for (size_t i = 0; i < len; i++) {
+		Variable_print((Variable*)data + i, true);
+	}
+}
+
+DynArrFunc DynArrVarFunc = {
+	DynArrVar_print,
+	Variable_copy_void_ptr, 
+	Variable_free_data_name_void_ptr
+};
+

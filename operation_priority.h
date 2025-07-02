@@ -2,6 +2,7 @@
 #include "strfunctions.h"
 
 typedef enum {
+	OPERATION_PRIORITY_COMMA,
 	OPERATION_PRIORITY_OR,
 	OPERATION_PRIORITY_AND,
 	OPERATION_PRIORITY_EQORNOT,
@@ -16,6 +17,7 @@ char* addSubList[] = {"+", "-"};
 char* multDivList[] = {"*", "/", "//", "%%"};
 char* expList[] = {"^"};
 char* unaryList[] = {"%", "!", "'", "~", "++", "--"};
+char* commaList[] = {","};
 char* orList[] = {"||"};
 char* andList[] = {"&&"};
 char* eqOrNotList[] = {"==", "~="};
@@ -33,6 +35,9 @@ OperationPriority OperationPriority_getPriority(char* op) {
 	}
 	if (str_is_one_of(op, unaryList, 4)) {
 		return OPERATION_PRIORITY_UNARY;
+	}
+	if (str_is_one_of(op, commaList, 1)) {
+		return OPERATION_PRIORITY_COMMA;
 	}
 	if (str_is_one_of(op, comparList, 4)) {
 		return OPERATION_PRIORITY_COMPAR;

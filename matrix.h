@@ -63,8 +63,7 @@ Matrix* Matrix_input(int N, int M)
 
 void Matrix_print(Matrix* A)
 {
-	printf("(%d %d) ", A->N, A->M);
-	printf("{\n");
+	printf("[%d, %d] {\n", A->N, A->M);
 	for (int i = 0; i < A->N; i++) {
 		for (int j = 0; j < A->M; j++) {
 			printf("%g\t", *Matrix_at(A, i, j));

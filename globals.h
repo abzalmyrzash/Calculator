@@ -5,13 +5,40 @@
 HashMap* hashmap;
 Variable* memory;
 bool quit = false;
+bool debug = false;
 
 void init_globals() {
 	hashmap = HashMap_new(8);
+
 	char* mem_name = malloc(4);
 	strcpy(mem_name, "mem");
 	memory = Variable_new(VAR_TYPE_NULL, mem_name, NULL);
+
 	HashMap_insert(hashmap, mem_name, memory);
+
+	char* pi_name = malloc(3);
+	strcpy(pi_name, "pi");
+	double* pi_value = malloc(sizeof(double));
+	*pi_value = M_PI;
+	Variable* pi = Variable_new(VAR_TYPE_NUMBER, pi_name, pi_value);
+
+	HashMap_insert(hashmap, pi_name, pi);
+
+	char* deg_name = malloc(4);
+	strcpy(deg_name, "deg");
+	double* deg_value = malloc(sizeof(double));
+	*deg_value = M_PI / 180;
+	Variable* deg = Variable_new(VAR_TYPE_NUMBER, deg_name, deg_value);
+
+	HashMap_insert(hashmap, deg_name, deg);
+
+	char * e_name = malloc(2);
+	strcpy(e_name, "e");
+	double* e_value = malloc(sizeof(double));
+	*e_value = M_E;
+	Variable* e = Variable_new(VAR_TYPE_NUMBER, e_name, e_value);
+
+	HashMap_insert(hashmap, e_name, e);
 }
 
 void free_globals() {

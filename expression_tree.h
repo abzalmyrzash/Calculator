@@ -2,6 +2,7 @@
 #include "token.h"
 #include "operation_priority.h"
 #include "calculate.h"
+#include "dynarr.h"
 
 struct TreeNode {
 	struct TreeNode* left;
@@ -31,14 +32,13 @@ void _TreeNode_free(struct TreeNode* node) {
 	if(node == NULL) return;
 	_TreeNode_free(node->left);
 	_TreeNode_free(node->right);
-	Variable_free(node->value);
 	free(node);
 }
 
 int _TreeNode_split(struct TreeNode* node) {
 	Token* chosenOperation = NULL; // the operation token where the split happens
 	// chosen operation must have minimum bracketLevel and priority
-	OperationPriority minPriority;
+	OperationPriority priority, minPriority;
 	// bracket level is how many bracket pairs we are inside of
 	int bracketLevel = 0;
 	int minBracketLevel;
@@ -49,21 +49,52 @@ int _TreeNode_split(struct TreeNode* node) {
 		case TOKEN_TYPE_BRACKET2:
 			bracketLevel++;
 			break;
+
 		case TOKEN_TYPE_BRACKET1:
 			bracketLevel--;
 			break;
+
 		case TOKEN_TYPE_OPERATION:
-			OperationPriority priority = OperationPriority_getPriority(token->str);
+			priority = OperationPriority_getPriority(token->str);
+			
 			if (chosenOperation == NULL ||
-					(priority < minPriority && bracketLevel == minBracketLevel)
-					||  bracketLevel < minBracketLevel ||
-			(strsame(chosenOperation->str, "^") && strsame(token->str, "^")
-				&& bracketLevel == minBracketLevel)) {
+		(priority < minPriority && bracketLevel == minBracketLevel)
+		||  bracketLevel < minBracketLevel ||
+		(strsame(chosenOperation->str, "^") && strsame(token->str, "^")
+			&& bracketLevel == minBracketLevel)) {
+
 				chosenOperation = token;
 				minPriority = priority;
 				minBracketLevel = bracketLevel;
 			}
 			break;
+
+		case TOKEN_TYPE_FUNCTION:
+			priority = OPERATION_PRIORITY_UNARY;
+
+			if (chosenOperation == NULL ||
+		(priority < minPriority && bracketLevel == minBracketLevel)
+			|| bracketLevel < minBracketLevel) {
+
+				chosenOperation = token;
+				minPriority = priority;
+				minBracketLevel = bracketLevel;
+			}
+			break;
+
+		case TOKEN_TYPE_SQRBR1:
+			priority = 0;
+
+			if (chosenOperation == NULL ||
+		(priority <= minPriority && bracketLevel == minBracketLevel)
+			|| bracketLevel < minBracketLevel) {
+
+				chosenOperation = token;
+				minPriority = priority;
+				minBracketLevel = bracketLevel;
+			}
+			break;
+
 		default:
 			break;
 		}
@@ -100,8 +131,27 @@ int _TreeNode_split(struct TreeNode* node) {
 	// if operation was found, split expression into left and right children
 	// with operation in the middle as their parent
 	// Token_print(chosenOperation);
+	int exprLen = 1;
+	if (chosenOperation->type == TOKEN_TYPE_SQRBR1) {
+		Token* token = chosenOperation+1;
+		while (token != node->expr + node->exprLen) {
+			if (token->type == TOKEN_TYPE_SQRBR1) {
+				printf("ERROR: nested square bracket!\n");
+				return 1;
+			}
+			if (token->type == TOKEN_TYPE_SQRBR2) {
+				exprLen = token - chosenOperation + 1;
+				break;
+			}
+			token++;
+		}
+		if (token->type != TOKEN_TYPE_SQRBR2) {
+			printf("ERROR: no matching square bracket!\n");
+			return 1;
+		}
+	}
 	int leftLen = chosenOperation - node->expr;
-	int rightLen = node->exprLen + (node->expr - chosenOperation) - 1;
+	int rightLen = node->exprLen + (node->expr - chosenOperation) - exprLen;
 	// printf("%d\n", leftLen);
 	// printf("%d\n", rightLen);
 
@@ -114,7 +164,7 @@ int _TreeNode_split(struct TreeNode* node) {
 		}
 	}
 	if (rightLen > 0) {
-		Token* rightToken = chosenOperation + 1;
+		Token* rightToken = chosenOperation + exprLen;
 		node->right = _TreeNode_new(rightToken, rightLen);
 		if(_TreeNode_split(node->right) == 1) {
 			_TreeNode_free(node->right);
@@ -122,19 +172,63 @@ int _TreeNode_split(struct TreeNode* node) {
 		}
 	}
 	node->expr = chosenOperation;
-	node->exprLen = 1;
+	node->exprLen = exprLen;
 	return 0;
 }
 
+// get dimensions from square brackets
+DynArr* get_dimensions(Token* expr, int exprLen);
+
 Variable* _TreeNode_evaluate(struct TreeNode* node) {
+	DynArr *dims;
 	if (node == NULL) return NULL;
 	if (node->value != NULL) return node->value;
-	Variable* leftVal = _TreeNode_evaluate(node->left);
-	if (leftVal != NULL && leftVal->type == VAR_TYPE_ERROR) return leftVal;
-	Variable* rightVal = _TreeNode_evaluate(node->right);
-	if (rightVal != NULL && rightVal->type == VAR_TYPE_ERROR) return rightVal;
-	node->value = calculate(leftVal, rightVal, node->expr->str);
+	if (node->expr->type == TOKEN_TYPE_OPERATION) {
+		Variable* leftVal = _TreeNode_evaluate(node->left);
+		if (leftVal != NULL && leftVal->type == VAR_TYPE_ERROR) return leftVal;
+		Variable* rightVal = _TreeNode_evaluate(node->right);
+		if (rightVal != NULL && rightVal->type == VAR_TYPE_ERROR) return rightVal;
+		node->value = calculate_operation(leftVal, rightVal, node->expr->str);
+		Variable_free(leftVal);
+		Variable_free(rightVal);
+	}
+	if (node->expr->type == TOKEN_TYPE_FUNCTION) {
+		Variable* rightVal = _TreeNode_evaluate(node->right);
+		if (rightVal != NULL && rightVal->type == VAR_TYPE_ERROR) return rightVal;
+		node->value = calculate_function(node->expr->str, rightVal);
+		Variable_free(rightVal);
+	}
+	else if (node->expr->type == TOKEN_TYPE_SQRBR1) {
+		dims = get_dimensions(node->expr, node->exprLen);
+		if (dims == NULL) {
+			printf("ERROR: failed to get dimensions!\n");
+			return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
+		}
+		if (dims->len > 2) {
+			DynArr_free(dims);
+			printf("ERROR: can't have more than 2 dimensions!\n");
+			return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
+		}
+		if(node->left != NULL && node->right == NULL) {
+			Variable* leftVal = _TreeNode_evaluate(node->left);
+			if (leftVal->type != VAR_TYPE_MATRIX || leftVal->type != VAR_TYPE_VECTOR) {
+				node->value = get_by_indices(leftVal, dims);
+			}
+		}
+		else if(node->right != NULL && node->left == NULL) {
+			Variable* rightVal = _TreeNode_evaluate(node->right);
+			node->value = convert_list(dims, rightVal);
+		}
+		else {
+			goto return_dims_error;
+		}
+		DynArr_free(dims);
+	}
+
 	return node->value;
+	return_dims_error:
+		DynArr_free(dims);
+		return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 }
 
 typedef struct {
@@ -174,7 +268,10 @@ void _TreeNode_print(struct TreeNode* node, int level) {
 		printf("NULL\n");
 		return;
 	}
-	printf("%s\n", node->expr->str);
+	for (int i = 0; i < node->exprLen; i++) {
+		printf("%s", node->expr[i].str);
+	}
+	printf("\n");
 	if (node->left != NULL || node->right != NULL) {
 		_TreeNode_print(node->left, level+1);
 		_TreeNode_print(node->right, level+1);
@@ -184,4 +281,31 @@ void _TreeNode_print(struct TreeNode* node, int level) {
 void ExpressionTree_print(ExpressionTree* tree) {
 	_TreeNode_print(tree->root, 0);
 	//printf("tree printed\n");
+}
+
+DynArr* get_dimensions(Token* expr, int exprLen) {
+	ExpressionTree* tree = ExpressionTree_new(expr+1, exprLen-2);
+	ExpressionTree_split(tree);
+	Variable* res = ExpressionTree_evaluate(tree);
+	DynArr* arr;
+	ExpressionTree_free(tree);
+	if (res == NULL || res->type == VAR_TYPE_ERROR) return NULL;
+	if (res->type != VAR_TYPE_LIST) {
+		if (res->type == VAR_TYPE_NUMBER) {
+			arr = DynArr_new(sizeof(Variable), 1, DynArrVarFunc);
+			DynArr_append(arr, res);
+		} else {
+			return NULL;
+		}
+	}
+	else {
+		arr = (DynArr*)res->data;
+		for (int i = 0; i < arr->len; i++) {
+			Variable* var = (Variable*)arr->data + i;
+			if(var->type != VAR_TYPE_NUMBER) {
+				return NULL;
+			}
+		}
+	}
+	return arr;
 }

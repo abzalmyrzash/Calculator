@@ -5,9 +5,11 @@ typedef enum {
 	TOKEN_TYPE_NAME,
 	TOKEN_TYPE_NUMBER,
 	TOKEN_TYPE_OPERATION,
+	TOKEN_TYPE_FUNCTION,
 	TOKEN_TYPE_BRACKET1,
 	TOKEN_TYPE_BRACKET2,
-	TOKEN_TYPE_COMMA,
+	TOKEN_TYPE_SQRBR1,
+	TOKEN_TYPE_SQRBR2,
 	TOKEN_TYPE_EQUAL,
 	TOKEN_TYPE_SPECIAL,
 } TokenType;
@@ -16,9 +18,11 @@ char* tokenTypeStrArr[] = {
 	"TOKEN_TYPE_NAME",
 	"TOKEN_TYPE_NUMBER",
 	"TOKEN_TYPE_OPERATION",
+	"TOKEN_TYPE_FUNCTION",
 	"TOKEN_TYPE_BRACKET1",
 	"TOKEN_TYPE_BRACKET2",
-	"TOKEN_TYPE_COMMA",
+	"TOKEN_TYPE_SQRBR1",
+	"TOKEN_TYPE_SQRBR2",
 	"TOKEN_TYPE_EQUAL",
 	"TOKEN_TYPE_SPECIAL"
 };
@@ -60,16 +64,16 @@ DynArrFunc DynArrTokenFunc = {
 	DynArrToken_free
 };
 
-#define NUM_OPERATIONS 22
-#define NUM_SINGLE_CHAR_OPS 11
+#define NUM_OPERATIONS 23
+#define NUM_SINGLE_CHAR_OPS 12
 #define NUM_DOUBLE_CHAR_OPS 11
 
 char* operations[NUM_OPERATIONS] = {
-	"+", "-", "*", "/", "%", "^", "!", "'", ">", "<", "~"
+	",", "+", "-", "*", "/", "%", "^", "!", "'", ">", "<", "~"
 	"++", "--", "**", "//", "%%", "==", "~=", ">=", "<=", "&&", "||",
 };
 
-char* single_char_ops = "+-*/%^!'><~";
+char* single_char_ops = ",+-*/%^!'><~";
 
 char* double_char_ops[NUM_DOUBLE_CHAR_OPS] = {
 	"++", "--", "**", "//", "%%", "==", "~=", ">=", "<=", "&&", "||"
@@ -87,10 +91,15 @@ int str_is_op_len(char* str) {
 	return len;
 }
 
-#define SPECIAL_TOKENS_SIZE 10
+#define SPECIAL_TOKENS_SIZE 12
 char* special_tokens[SPECIAL_TOKENS_SIZE] = {
-	"exit", "quit", "let", "calc", "solve", "matrix",
-	"save", "del", "print", "help"
+	"exit", "quit", "let", "calc", "solve", "matrix", "vector",
+	"save", "del", "print", "help", "debug"
+};
+
+#define FUNCTION_TOKENS_SIZE 6
+char* function_tokens[] = {
+	"sqrt", "sin", "cos", "tan", "ln", "log"
 };
 
 DynArr* split_into_tokens(char* command)
@@ -113,7 +122,8 @@ DynArr* split_into_tokens(char* command)
 		bool is_equal_sign = *tokenStart == '=';
 		bool is_bracket1 = *tokenStart == '(';
 		bool is_bracket2 = *tokenStart == ')';
-		bool is_comma = *tokenStart == ',';
+		bool is_sqrbr1 = *tokenStart == '[';
+		bool is_sqrbr2 = *tokenStart == ']';
 		TokenType prevType = -1;
 		if (tokens->len > 0) {
 			prevType = ((Token*)DynArr_at(tokens, tokens->len - 1))->type;
@@ -149,9 +159,14 @@ DynArr* split_into_tokens(char* command)
 			tokenType = TOKEN_TYPE_BRACKET2;
 		}
 
-		else if (is_comma) {
+		else if (is_sqrbr1) {
 			tokenLen = 1;
-			tokenType = TOKEN_TYPE_COMMA;
+			tokenType = TOKEN_TYPE_SQRBR1;
+		}
+
+		else if (is_sqrbr2) {
+			tokenLen = 1;
+			tokenType = TOKEN_TYPE_SQRBR2;
 		}
 
 		else {
@@ -162,14 +177,20 @@ DynArr* split_into_tokens(char* command)
 
 		tokenString = str_get_null_terminated(tokenStart, tokenLen);
 
-		if (str_is_one_of(tokenString, special_tokens, SPECIAL_TOKENS_SIZE)) {
-			tokenType = TOKEN_TYPE_SPECIAL;
+		if (tokenType == TOKEN_TYPE_NAME) {
+			if (str_is_one_of(tokenString, special_tokens, SPECIAL_TOKENS_SIZE)) {
+				tokenType = TOKEN_TYPE_SPECIAL;
+			}
+			else if (str_is_one_of(tokenString, function_tokens, FUNCTION_TOKENS_SIZE)) {
+				tokenType = TOKEN_TYPE_FUNCTION;
+			}
 		}
 
 		// if something like 2a is inputted, assume multiplication
 		if (prevType != TOKEN_TYPE_SPECIAL &&
 	(prevType == TOKEN_TYPE_NUMBER || prevType == TOKEN_TYPE_NAME)
-	&& (tokenType == TOKEN_TYPE_NAME || tokenType == TOKEN_TYPE_BRACKET1)) {
+	&& (tokenType == TOKEN_TYPE_NAME || tokenType == TOKEN_TYPE_BRACKET1 ||
+	tokenType == TOKEN_TYPE_FUNCTION)) {
 			char* multiplyStr = malloc(2);
 			strcpy(multiplyStr, "*");
 			Token multiplyToken = (Token){multiplyStr, TOKEN_TYPE_OPERATION};
