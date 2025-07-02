@@ -91,10 +91,10 @@ int str_is_op_len(char* str) {
 	return len;
 }
 
-#define SPECIAL_TOKENS_SIZE 12
+#define SPECIAL_TOKENS_SIZE 13
 char* special_tokens[SPECIAL_TOKENS_SIZE] = {
 	"exit", "quit", "let", "calc", "solve", "matrix", "vector",
-	"save", "del", "print", "help", "debug"
+	"save", "del", "print", "help", "debug", "autoprint"
 };
 
 #define FUNCTION_TOKENS_SIZE 6

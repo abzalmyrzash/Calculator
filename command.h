@@ -124,7 +124,7 @@ int process_tokens_calc(Token* tokens, int len) {
 		return 1;
 	}
 	Variable_assign_data(memory, res);
-	Variable_print(res, false);
+	if (autoprint) Variable_print(res, false);
 	Variable_free(res);
 	ExpressionTree_free(tree);
 	
@@ -246,6 +246,25 @@ int process_tokens_debug(Token* tokens, int len) {
 	}
 }
 
+int process_tokens_autoprint(Token* tokens, int len) {
+	if (len != 1) {
+		printf("ERROR: autoprint accepts 1 argument!\n");
+		return 1;
+	}
+	if (strsame(tokens->str, "on")) {
+		autoprint = true;
+		return 0;
+	}
+	if (strsame(tokens->str, "off")) {
+		autoprint = false;
+		return 0;
+	}
+	else {
+		printf("ERROR: argument must be 'on' or 'off'!\n");
+		return 1;
+	}
+}
+
 int process_tokens(Token* tokens, int len) {
 	Token firstToken = tokens[0];
 	int special_index = str_find_in_list(
@@ -282,6 +301,9 @@ int process_tokens(Token* tokens, int len) {
 		}
 		if (specialToken == "debug") {
 			return process_tokens_debug(tokens+1, len-1);
+		}
+		if (specialToken == "autoprint") {
+			return process_tokens_autoprint(tokens+1, len-1);
 		}
 	}
 	else {

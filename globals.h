@@ -6,6 +6,7 @@ HashMap* hashmap;
 Variable* memory;
 bool quit = false;
 bool debug = false;
+bool autoprint = true;
 #define SPECIAL_VAR_NAMES_SIZE 4
 #define CONST_VAR_NAMES_SIZE 3
 char* special_var_names[] = {"mem", "pi", "deg", "e"};
