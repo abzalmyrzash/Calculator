@@ -6,6 +6,10 @@ HashMap* hashmap;
 Variable* memory;
 bool quit = false;
 bool debug = false;
+#define SPECIAL_VAR_NAMES_SIZE 4
+#define CONST_VAR_NAMES_SIZE 3
+char* special_var_names[] = {"mem", "pi", "deg", "e"};
+char* const_var_names[] = {"pi", "deg", "e"};
 
 void init_globals() {
 	hashmap = HashMap_new(8);

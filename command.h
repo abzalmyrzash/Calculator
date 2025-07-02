@@ -145,6 +145,10 @@ int process_tokens_let(Token* tokens, int len) {
 		return 1;
 	}
 	char* name = tokens[0].str;
+	if (str_is_one_of(name, const_var_names, CONST_VAR_NAMES_SIZE)) {
+		printf("ERROR: Can't change constant variable %s!\n", name);
+		return 1;
+	}
 	if(strsame(tokens[2].str, "matrix")) {
 		process_tokens_matrix(tokens+3, len-3);
 		copy_var_to_name(memory, name);
@@ -174,6 +178,10 @@ int process_tokens_save(Token* tokens, int len) {
 		return 1;
 	}
 	char* name = tokens[0].str;
+	if (str_is_one_of(name, const_var_names, CONST_VAR_NAMES_SIZE)) {
+		printf("ERROR: Can't change constant variable %s!\n", name);
+		return 1;
+	}
 	copy_var_to_name(memory, name);
 	return 0;
 }
@@ -183,7 +191,15 @@ int process_tokens_del(Token* tokens, int len) {
 		printf("ERROR: Invalid number of arguments!\n");
 		return 1;
 	}
+	if(tokens[0].type != TOKEN_TYPE_NAME) {
+		printf("ERROR: Invalid name!\n");
+		return 1;
+	}
 	char* name = tokens[0].str;
+	if (str_is_one_of(name, special_var_names, SPECIAL_VAR_NAMES_SIZE)) {
+		printf("ERROR: Can't delete special variable %s!\n", name);
+		return 1;
+	}
 	delete_variable(name);
 }
 
