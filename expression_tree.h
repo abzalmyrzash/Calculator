@@ -202,22 +202,23 @@ Variable* _TreeNode_evaluate(struct TreeNode* node) {
 		dims = get_dimensions(node->expr, node->exprLen);
 		if (dims == NULL) {
 			printf("ERROR: failed to get dimensions!\n");
-			return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
+			goto return_dims_error;
 		}
 		if (dims->len > 2) {
-			DynArr_free(dims);
-			printf("ERROR: can't have more than 2 dimensions!\n");
-			return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
+			printf("ERROR: can only have 1 or 2 dimensions!\n");
+			goto return_dims_error;
 		}
 		if(node->left != NULL && node->right == NULL) {
 			Variable* leftVal = _TreeNode_evaluate(node->left);
-			if (leftVal->type != VAR_TYPE_MATRIX || leftVal->type != VAR_TYPE_VECTOR) {
+			if (leftVal->type == VAR_TYPE_MATRIX || leftVal->type == VAR_TYPE_VECTOR) {
 				node->value = get_by_indices(leftVal, dims);
 			}
+			Variable_free(leftVal);
 		}
 		else if(node->right != NULL && node->left == NULL) {
 			Variable* rightVal = _TreeNode_evaluate(node->right);
 			node->value = convert_list(dims, rightVal);
+			Variable_free(rightVal);
 		}
 		else {
 			goto return_dims_error;
@@ -284,28 +285,32 @@ void ExpressionTree_print(ExpressionTree* tree) {
 }
 
 DynArr* get_dimensions(Token* expr, int exprLen) {
+	if(exprLen <= 2) return NULL;
 	ExpressionTree* tree = ExpressionTree_new(expr+1, exprLen-2);
 	ExpressionTree_split(tree);
 	Variable* res = ExpressionTree_evaluate(tree);
 	DynArr* arr;
 	ExpressionTree_free(tree);
-	if (res == NULL || res->type == VAR_TYPE_ERROR) return NULL;
-	if (res->type != VAR_TYPE_LIST) {
+	if (res == NULL || res->type == VAR_TYPE_ERROR) { arr = NULL; }
+	else if (res->type != VAR_TYPE_LIST) {
 		if (res->type == VAR_TYPE_NUMBER) {
 			arr = DynArr_new(sizeof(Variable), 1, DynArrVarFunc);
 			DynArr_append(arr, res);
 		} else {
-			return NULL;
+			arr = NULL;
 		}
 	}
 	else {
-		arr = (DynArr*)res->data;
+		arr = DynArr_copy(res->data);
 		for (int i = 0; i < arr->len; i++) {
 			Variable* var = (Variable*)arr->data + i;
 			if(var->type != VAR_TYPE_NUMBER) {
-				return NULL;
+				DynArr_free(arr);
+				arr = NULL;
+				break;
 			}
 		}
 	}
+	Variable_free(res);
 	return arr;
 }

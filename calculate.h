@@ -46,7 +46,8 @@ Variable* convert_list(DynArr* dimensions, Variable* list) {
 		if (dim != len) {
 			goto return_error;
 		}
-		Vector* vector = Vector_new(dim);
+		Vector* vector = malloc(sizeof(Vector));
+		vector->N = dim;
 		vector->val = values;
 		var = Variable_new(VAR_TYPE_VECTOR, NULL, vector);
 	}
@@ -56,8 +57,10 @@ Variable* convert_list(DynArr* dimensions, Variable* list) {
 		if (dim1 * dim2 != len) {
 			goto return_error;
 		}
-		Matrix* matrix = Matrix_new(dim1, dim2);
+		Matrix* matrix = malloc(sizeof(Matrix));
 		matrix->val = values;
+		matrix->N = dim1;
+		matrix->M = dim2;
 		var = Variable_new(VAR_TYPE_MATRIX, NULL, matrix);
 	}
 	else {

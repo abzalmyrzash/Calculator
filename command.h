@@ -120,10 +120,12 @@ int process_tokens_calc(Token* tokens, int len) {
 	Variable* res = ExpressionTree_evaluate(tree);
 	if (res == NULL || res->type == VAR_TYPE_ERROR) {
 		ExpressionTree_free(tree);
+		Variable_free(res);
 		return 1;
 	}
 	Variable_assign_data(memory, res);
 	Variable_print(res, false);
+	Variable_free(res);
 	ExpressionTree_free(tree);
 	
 	return 0;
