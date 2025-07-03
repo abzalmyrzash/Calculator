@@ -180,11 +180,14 @@ int _TreeNode_split(struct TreeNode* node) {
 
 Variable* evaluate_within_brackets(Token* expr, int exprLen);
 
-// get dimensions from square brackets
-DynArr* get_dimensions(Token* expr, int exprLen);
+// get dimensions from square brackets and write them into dims[2]
+void get_dimensions(Token* expr, int exprLen, int dims[2]);
+// use said dimensions to convert list into vector or matrix
+Variable* convert_list(Variable* list, int dims[2]);
+// use dimensions as indices to retrieve value from vector or matrix
+Variable* get_by_indices(Variable* var, int indices[2]);
 
 Variable* _TreeNode_evaluate(struct TreeNode* node) {
-	DynArr *dims;
 	if (node == NULL) return NULL;
 	if (node->value != NULL) return node->value;
 	if (node->expr->type == TOKEN_TYPE_OPERATION) {
@@ -203,10 +206,13 @@ Variable* _TreeNode_evaluate(struct TreeNode* node) {
 		Variable_free(rightVal);
 	}
 	else if (node->expr->type == TOKEN_TYPE_SQRBR1) {
-		dims = get_dimensions(node->expr, node->exprLen);
-		if (dims == NULL) {
-			goto return_dims_error;
+		int dims[2] = {0, 0};
+		get_dimensions(node->expr, node->exprLen, dims);
+		if (dims[0] == 0) {
+			goto return_error;
 		}
+		// if there is something from the left side, use square brackets as indices
+		// indices start from 1 not 0
 		if(node->left != NULL && node->right == NULL) {
 			Variable* leftVal = _TreeNode_evaluate(node->left);
 			if (leftVal->type == VAR_TYPE_MATRIX || leftVal->type == VAR_TYPE_VECTOR) {
@@ -214,21 +220,20 @@ Variable* _TreeNode_evaluate(struct TreeNode* node) {
 			}
 			Variable_free(leftVal);
 		}
+		// if there is something from the right side, use square brackets as dimensions
 		else if(node->right != NULL && node->left == NULL) {
 			Variable* rightVal = _TreeNode_evaluate(node->right);
-			node->value = convert_list(rightVal, dims->data, dims->len);
+			node->value = convert_list(rightVal, dims);
 			Variable_free(rightVal);
 		}
 		else {
-			printf("ERROR: failed to apply dimensions!\n");
-			goto return_dims_error;
+			printf("ERROR: failed to apply square brackets!\n");
+			goto return_error;
 		}
-		DynArr_free(dims);
 	}
 
 	return node->value;
-	return_dims_error:
-		DynArr_free(dims);
+	return_error:
 		return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 }
 
@@ -293,43 +298,119 @@ Variable* evaluate_within_brackets(Token* expr, int exprLen) {
 	return res;
 }
 
-// DynArr of integers
-DynArr* get_dimensions(Token* expr, int exprLen) {
+void get_dimensions(Token* expr, int exprLen, int dims[2]) {
 	Variable* res = evaluate_within_brackets(expr, exprLen);
 	if (res == NULL) {
 		printf("ERROR: empty dimensions!\n");
-		return NULL;
+		return;
 	}
-	DynArr* dims = NULL;
 	if (res->type == VAR_TYPE_NUMBER) {
 		int rounded = lround(*(double*)res->data);
 		if (rounded > 0) {
-			dims = DynArr_new(sizeof(int), 1, DynArrIntFunc);
-			DynArr_append(dims, &rounded);
+			dims[0] = rounded;
 		} else {
 			printf("ERROR: dimensions must be positive!\n");
+			goto outside;
 		}
 	}
 	else if (Variable_is_list_of_numbers(res)) {
 		DynArr* list = res->data;
+		if (list->len != 2) {
+			printf("ERROR: must contain no more than 2 dimensions!\n");
+			goto outside;
+		}
 		Variable* arr = list->data;
-		dims = DynArr_new(sizeof(int), 1, DynArrIntFunc);
-		for (int i = 0; i < list->len; i++) {
+		for (int i = 0; i < 2; i++) {
 			int rounded = lround(*(double*)arr[i].data);
 			if (rounded > 0) {
-				DynArr_append(dims, &rounded);
+				dims[i] = rounded;
 			} else {
-				DynArr_free(dims);
-				dims = NULL;
 				printf("ERROR: dimensions must be positive!\n");
-				break;
+				goto outside;
 			}
 		}
 	}
 	else {
 		printf("ERROR: non-number dimensions!\n");
 	}
+outside:
 	Variable_free(res);
-
-	return dims;
 }
+
+Variable* get_by_indices(Variable* var, int indices[2]) {
+	Variable* element;
+	// human indices start from 1 not 0
+	int i = indices[0];
+	int j = indices[1];
+	if (i > 0 && j == 0 && var->type == VAR_TYPE_VECTOR) {	
+		i--; // decrement human index to computer index
+		Vector* vector = var->data;
+		if (!Vector_valid_index(vector, i)) {
+			goto return_error;
+		}
+		double* val = malloc(sizeof(double));
+		*val = vector->val[i];
+		element = Variable_new(VAR_TYPE_NUMBER, NULL, val);
+	}
+	else if (i > 0 && j > 0 && var->type == VAR_TYPE_MATRIX) {
+		i--; j--; // decrement human indices to computer indices
+		Matrix* matrix = var->data;
+		if (!Matrix_valid_indices(matrix, i, j)) {
+			goto return_error;
+		}
+		double* val = malloc(sizeof(double));
+		*val = *Matrix_at(matrix, i, j);
+		element = Variable_new(VAR_TYPE_NUMBER, NULL, val);
+	}
+	else {
+		goto return_error;
+	}
+	return element;
+return_error:
+	printf("ERROR: Invalid indices!\n");
+	return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
+}
+
+Variable* convert_list(Variable* list, int dims[2]) {
+	Variable* arr = ((DynArr*)list->data)->data;
+	int len = ((DynArr*)list->data)->len;
+	double* values = malloc(sizeof(double)*len);
+	for (int i = 0; i < len; i++) {
+		if (arr[i].type != VAR_TYPE_NUMBER) {
+			goto return_error;
+		} else {
+			values[i] = *(double*)arr[i].data;
+		}
+	}
+	Variable* var;
+	int N = dims[0];
+	int M = dims[1];
+	if (N > 0 && M == 0) {
+		if (N != len) {
+			goto return_error;
+		}
+		Vector* vector = malloc(sizeof(Vector));
+		vector->N = N;
+		vector->val = values;
+		var = Variable_new(VAR_TYPE_VECTOR, NULL, vector);
+	}
+	else if (N > 0 && M > 0) {
+		if (N * M != len) {
+			goto return_error;
+		}
+		Matrix* matrix = malloc(sizeof(Matrix));
+		matrix->val = values;
+		matrix->N = N;
+		matrix->M = M;
+		var = Variable_new(VAR_TYPE_MATRIX, NULL, matrix);
+	}
+	else {
+		goto return_error;
+	}
+	return var;
+return_error:
+	printf("ERROR: invalid dimensions!\n");
+	free(values);
+	return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
+}
+
