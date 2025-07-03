@@ -121,7 +121,7 @@ int _TreeNode_split(struct TreeNode* node) {
 				node->expr = token;
 				node->exprLen = 1;
 				Variable* var = HashMap_search(hashmap, token->str);
-				node->value = Variable_copy(var);
+				node->value = var;
 				break;
 			default:
 				break;
@@ -190,21 +190,29 @@ Variable* get_by_indices(Variable* var, int indices[2]);
 Variable* _TreeNode_evaluate(struct TreeNode* node) {
 	if (node == NULL) return NULL;
 	if (node->value != NULL) return node->value;
+
 	if (node->expr->type == TOKEN_TYPE_OPERATION) {
 		Variable* leftVal = _TreeNode_evaluate(node->left);
 		if (leftVal != NULL && leftVal->type == VAR_TYPE_ERROR) return leftVal;
 		Variable* rightVal = _TreeNode_evaluate(node->right);
 		if (rightVal != NULL && rightVal->type == VAR_TYPE_ERROR) return rightVal;
 		node->value = calculate_operation(leftVal, rightVal, node->expr->str);
-		Variable_free(leftVal);
-		Variable_free(rightVal);
+		// free variables if they are not named
+		if (leftVal != NULL && leftVal->name == NULL)
+			Variable_free(leftVal);
+		if (rightVal != NULL && rightVal->name == NULL)
+			Variable_free(rightVal);
 	}
-	if (node->expr->type == TOKEN_TYPE_FUNCTION) {
+
+	else if (node->expr->type == TOKEN_TYPE_FUNCTION) {
 		Variable* rightVal = _TreeNode_evaluate(node->right);
-		if (rightVal != NULL && rightVal->type == VAR_TYPE_ERROR) return rightVal;
+		if (rightVal != NULL && rightVal->type == VAR_TYPE_ERROR)
+			return rightVal;
 		node->value = calculate_function(node->expr->str, rightVal);
-		Variable_free(rightVal);
+		if (rightVal != NULL && rightVal->name == NULL)
+			Variable_free(rightVal);
 	}
+
 	else if (node->expr->type == TOKEN_TYPE_SQRBR1) {
 		int dims[2] = {0, 0};
 		get_dimensions(node->expr, node->exprLen, dims);
@@ -218,13 +226,15 @@ Variable* _TreeNode_evaluate(struct TreeNode* node) {
 			if (leftVal->type == VAR_TYPE_MATRIX || leftVal->type == VAR_TYPE_VECTOR) {
 				node->value = get_by_indices(leftVal, dims);
 			}
-			Variable_free(leftVal);
+			if (leftVal != NULL && leftVal->name == NULL)
+				Variable_free(leftVal);
 		}
 		// if there is something from the right side, use square brackets as dimensions
 		else if(node->right != NULL && node->left == NULL) {
 			Variable* rightVal = _TreeNode_evaluate(node->right);
 			node->value = convert_list(rightVal, dims);
-			Variable_free(rightVal);
+			if (rightVal != NULL && rightVal->name == NULL)
+				Variable_free(rightVal);
 		}
 		else {
 			printf("ERROR: failed to apply square brackets!\n");
@@ -233,6 +243,7 @@ Variable* _TreeNode_evaluate(struct TreeNode* node) {
 	}
 
 	return node->value;
+
 	return_error:
 		return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 }
@@ -334,7 +345,7 @@ void get_dimensions(Token* expr, int exprLen, int dims[2]) {
 		printf("ERROR: non-number dimensions!\n");
 	}
 outside:
-	Variable_free(res);
+	if (res->name == NULL) Variable_free(res);
 }
 
 Variable* get_by_indices(Variable* var, int indices[2]) {

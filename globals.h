@@ -13,37 +13,25 @@ char* special_var_names[] = {"mem", "pi", "deg", "e"};
 char* const_var_names[] = {"pi", "deg", "e"};
 
 void init_globals() {
-	hashmap = HashMap_new(8);
+	hashmap = HashMap_new(16);
 
-	char* mem_name = malloc(4);
-	strcpy(mem_name, "mem");
-	memory = Variable_new(VAR_TYPE_NULL, mem_name, NULL);
+	memory = Variable_new(VAR_TYPE_NULL, "mem", NULL);
+	HashMap_insert(hashmap, memory->name, memory);
 
-	HashMap_insert(hashmap, mem_name, memory);
-
-	char* pi_name = malloc(3);
-	strcpy(pi_name, "pi");
 	double* pi_value = malloc(sizeof(double));
 	*pi_value = M_PI;
-	Variable* pi = Variable_new(VAR_TYPE_NUMBER, pi_name, pi_value);
+	Variable* pi = Variable_new(VAR_TYPE_NUMBER, "pi", pi_value);
+	HashMap_insert(hashmap, pi->name, pi);
 
-	HashMap_insert(hashmap, pi_name, pi);
-
-	char* deg_name = malloc(4);
-	strcpy(deg_name, "deg");
 	double* deg_value = malloc(sizeof(double));
 	*deg_value = M_PI / 180;
-	Variable* deg = Variable_new(VAR_TYPE_NUMBER, deg_name, deg_value);
+	Variable* deg = Variable_new(VAR_TYPE_NUMBER, "deg", deg_value);
+	HashMap_insert(hashmap, deg->name, deg);
 
-	HashMap_insert(hashmap, deg_name, deg);
-
-	char * e_name = malloc(2);
-	strcpy(e_name, "e");
 	double* e_value = malloc(sizeof(double));
 	*e_value = M_E;
-	Variable* e = Variable_new(VAR_TYPE_NUMBER, e_name, e_value);
-
-	HashMap_insert(hashmap, e_name, e);
+	Variable* e = Variable_new(VAR_TYPE_NUMBER, "e", e_value);
+	HashMap_insert(hashmap, e->name, e);
 }
 
 void free_globals() {
@@ -55,17 +43,21 @@ Variable* get_var_by_name(char *name)
 	return (Variable*)HashMap_search(hashmap, name);
 }
 
+// copy contents of var to another variable that has specified name
 Variable* copy_var_to_name(Variable* var, char *name)
 {
-	Variable* oldVar = get_var_by_name(name); 
-	if(oldVar != NULL) {
-		HashMap_delete(hashmap, name);
-		Variable_free(oldVar);
+	void* data_copy = Variable_copy_data(var);
+	Variable* dest = get_var_by_name(name); 
+	if (dest == NULL) { // if var with such name doesn't exit yet, create
+		dest = Variable_new(var->type, name, data_copy);
+		HashMap_insert(hashmap, dest->name, dest);
 	}
-	Variable* copy = Variable_copy(var);
-	Variable_set_name(copy, name);
-	HashMap_insert(hashmap, copy->name, copy);
-	return copy;
+	else { // if exists, free the data, and assign to the copy
+		Variable_free_data(dest);
+		dest->type = var->type;
+		dest->data = data_copy;
+	}
+	return dest;
 }
 
 void delete_variable(char *name)

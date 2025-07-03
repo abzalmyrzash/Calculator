@@ -1,5 +1,6 @@
 #pragma once
 #include "expression_tree.h"
+#include "tokenize.h"
 
 void read_command(char* buffer, size_t bufsize) {
 	if (fgets(buffer, bufsize, stdin) == NULL) {
@@ -38,7 +39,9 @@ int process_tokens_matrix(Token* tokens, int len) {
 	int N = strtol(tokens[0].str, &endPtr, 10);
 	int M = strtol(tokens[2].str, &endPtr, 10);
 	Matrix* matrix = Matrix_input(N, M);
-	Variable_assign_matrix(memory, matrix);
+	Variable_free_data(memory);
+	memory->data = matrix;
+	memory->type = VAR_TYPE_MATRIX;
 	return 0;
 }
 
@@ -55,8 +58,9 @@ int process_tokens_vector(Token* tokens, int len) {
 	char* endPtr;
 	int N = strtol(t.str, &endPtr, 10);
 	Vector* vector = Vector_input(N);
-	Vector_print(vector);
-	Variable_assign_vector(memory, vector);
+	Variable_free_data(memory);
+	memory->data = vector;
+	memory->type = VAR_TYPE_VECTOR;
 	return 0;
 }
 
@@ -111,6 +115,7 @@ int process_tokens_calc(Token* tokens, int len) {
 		printf("ERROR: Non-matching square brackets!\n");
 		return 1;
 	}
+
 	ExpressionTree* tree = ExpressionTree_new(tokens, len);
 	if (ExpressionTree_split(tree) == 1) {
 		ExpressionTree_free(tree);
@@ -123,9 +128,19 @@ int process_tokens_calc(Token* tokens, int len) {
 		Variable_free(res);
 		return 1;
 	}
-	Variable_assign_data(memory, res);
 	if (autoprint) Variable_print(res, false);
-	Variable_free(res);
+
+	if (res->name == NULL) { // if no name, assign without copying
+		Variable_free_data(memory);
+		memory->data = res->data;
+		memory->type = res->type;
+		free(res);
+	}
+	else { // if res has name, assign by copying
+		Variable_free_data(memory);
+		memory->data = Variable_copy_data(res);
+		memory->type = res->type;
+	}
 	ExpressionTree_free(tree);
 	
 	return 0;
@@ -321,15 +336,14 @@ int process_tokens(Token* tokens, int len) {
 }
 
 int process_command(char* command) {
-	DynArr* tokens = split_into_tokens(command);
-	if (tokens == NULL) return 1;
-	if (!validate_tokens(tokens->data, tokens->len)) {
-		DynArr_free(tokens);
+	DynArr tokens = split_into_tokens(command);
+	if (!validate_tokens(&tokens)) {
+		DynArr_free_data(&tokens);
 		return 1;
 	}
 	// DynArr_print(tokens);
-	int res = process_tokens(tokens->data, tokens->len);
-	DynArr_free(tokens);
+	int res = process_tokens(tokens.data, tokens.len);
+	DynArr_free_data(&tokens);
 	return res;
 }
 

@@ -98,12 +98,17 @@ void DynArr_print(DynArr* a) {
 	}
 }
 
-void DynArr_free(DynArr* a) {
+void DynArr_free_data(DynArr* a) {
 	if (a == NULL) return;
 	if(a->func.free != NULL) {
 		DynArr_iterate(a, a->func.free);
 	}
 	free(a->data);
+}
+
+void DynArr_free(DynArr* a) {
+	if (a == NULL) return;
+	DynArr_free_data(a);
 	free(a);
 }
 
@@ -190,13 +195,13 @@ void* DynArr_remove_range(DynArr *a, size_t ind, size_t n) {
 }
 
 void DynArr_pop(DynArr *a) {
+	if(a->func.free != NULL) _DynArr_free_elem(a, a->len - 1);
 	DynArr_shrink(a, 1);
-	if(a->func.free != NULL) _DynArr_free_elem(a, a->len);
 }
 
 void DynArr_pop_n(DynArr *a, size_t n) {
+	if(a->func.free != NULL) _DynArr_free_range(a, a->len - n, n);
 	DynArr_shrink(a, n);
-	if(a->func.free != NULL) _DynArr_free_range(a, a->len, n);
 }
 
 void DynArr_clear(DynArr *a) {

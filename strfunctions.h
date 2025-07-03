@@ -1,8 +1,8 @@
 #pragma once
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
-#include "dynarr.h"
 
 char* str_get_null_terminated(char* str, int len) {
 	char* str2 = malloc(len + 1);
@@ -17,8 +17,10 @@ bool strsame(char* str1, char* str2) {
 
 int str_find_in_list(char* str, char** list, int n) {
 	for(int i = 0; i < n; i++) {
+		if (list[i] == NULL) return -1;
 		if(strsame(str, list[i])) return i;
-	} return -1;
+	}
+	return -1;
 }
 
 bool str_is_one_of(char* str, char** list, int n) {
@@ -98,16 +100,5 @@ int str_is_num_len(char* str) {
 
 bool str_is_num(char* str) {
 	return str_is_num_len(str) == strlen(str);
-}
-	
-DynArr* split_by_space(char* cmd)
-{
-	DynArr* words = DynArr_new(sizeof(char*), 8, DynArrStringFunc);
-	char* word = strtok(cmd, " ");
-	while(word) {
-		DynArr_append(words, &word);
-		word = strtok(NULL, " ");
-	}
-	return words;
 }
 

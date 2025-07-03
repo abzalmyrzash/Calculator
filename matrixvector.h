@@ -3,7 +3,9 @@
 
 Matrix* Vector_toMatrix(Vector* v) {
 	if (v == NULL) return NULL;
-	Matrix* M = Matrix_new(v->N, 1);
+	Matrix* M = malloc(sizeof(Matrix));
+	M->N = v->N;
+	M->M = 1;
 	M->val = v->val;
 	return M;
 }
@@ -14,7 +16,8 @@ Vector* Matrix_toVector(Matrix* M) {
 		printf("ERROR in Matrix_toVector: number of columns must be 1!\n");
 		return NULL;
 	}
-	Vector* v = Vector_new(M->N);
+	Vector* v = malloc(sizeof(Vector));
+	v->N = M->N;
 	v->val = M->val;
 	return v;
 }

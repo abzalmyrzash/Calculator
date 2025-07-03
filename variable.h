@@ -32,10 +32,23 @@ typedef struct {
 	void* data;
 } Variable;
 
+void Variable_set_name(Variable* var, char* name) {
+	if (var->name != NULL) free(var->name);
+	if (name == NULL) {
+		var->name = NULL;
+		return;
+	}
+	char* name_permanent = malloc(strlen(name)+1);
+	strcpy(name_permanent, name);
+	var->name = name_permanent;
+	return;
+}
+
 void Variable_init(Variable* var, VariableType type, char* name, void* data) {
 	var->type = type;
-	var->name = name;
 	var->data = data;
+	var->name = NULL;
+	Variable_set_name(var, name);
 }
 
 Variable* Variable_new(VariableType type, char* name, void* data) {
@@ -155,51 +168,6 @@ void Variable_free_except_name(Variable* var) {
 	if (var == NULL) return;
 	Variable_free_data(var);
 	free(var);
-}
-
-Variable* Variable_set_name(Variable* var, char* name) {
-	free(var->name);
-	char* name_permanent = malloc(strlen(name)+1);
-	strcpy(name_permanent, name);
-	var->name = name_permanent;
-	return var;
-}
-
-Variable* Variable_assign_data(Variable* dest, Variable* source) {
-	Variable_free_data(dest);
-	dest->type = source->type;
-	dest->data = Variable_copy_data(source);
-	return dest;
-}
-	
-void Variable_assign_number(Variable* var, double* number) {
-	if(var == NULL) {
-		var = (Variable*)malloc(sizeof(Variable));
-	} else {
-		Variable_free_data(var);
-	}
-	var->type = VAR_TYPE_NUMBER;
-	var->data = number;
-}
-
-void Variable_assign_matrix(Variable* var, Matrix* matrix) {
-	if(var == NULL) {
-		var = (Variable*)malloc(sizeof(Variable));
-	} else {
-		Variable_free_data(var);
-	}
-	var->type = VAR_TYPE_MATRIX;
-	var->data = matrix;
-}
-
-void Variable_assign_vector(Variable* var, Vector* vector) {
-	if (var == NULL) {
-		var = (Variable*)malloc(sizeof(Variable));
-	} else {
-		Variable_free_data(var);
-	}
-	var->type = VAR_TYPE_VECTOR;
-	var->data = vector;
 }
 
 void* Variable_copy_void_ptr(void* ptr) {
