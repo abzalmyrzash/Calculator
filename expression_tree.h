@@ -205,11 +205,6 @@ Variable* _TreeNode_evaluate(struct TreeNode* node) {
 	else if (node->expr->type == TOKEN_TYPE_SQRBR1) {
 		dims = get_dimensions(node->expr, node->exprLen);
 		if (dims == NULL) {
-			printf("ERROR: failed to get dimensions!\n");
-			goto return_dims_error;
-		}
-		if (dims->len > 2) {
-			printf("ERROR: can only have 1 or 2 dimensions!\n");
 			goto return_dims_error;
 		}
 		if(node->left != NULL && node->right == NULL) {

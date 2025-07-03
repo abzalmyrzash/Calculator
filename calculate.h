@@ -77,7 +77,7 @@ Variable* convert_list(Variable* list, int* dims, int dims_size) {
 	}
 	return var;
 return_error:
-	printf("ERROR: invalid dims!\n");
+	printf("ERROR: invalid dimensions!\n");
 	free(values);
 	return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 }
