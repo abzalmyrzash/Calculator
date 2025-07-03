@@ -6,29 +6,38 @@
 
 Variable* get_by_indices(Variable* var, DynArr* indices) {
 	Variable* element;
+	int* arr = indices->data;
 	if (indices->len == 1 && var->type == VAR_TYPE_VECTOR) {
 		Vector* vector = var->data;
-		int index = *(double*)((Variable*)indices->data)->data - 1;
+		int index = arr[0] - 1;
+		if (!Vector_valid_index(vector, index)) {
+			goto return_error;
+		}
 		double* val = malloc(sizeof(double));
 		*val = vector->val[index];
 		element = Variable_new(VAR_TYPE_NUMBER, NULL, val);
 	}
 	else if (indices->len == 2 && var->type == VAR_TYPE_MATRIX) {
 		Matrix* matrix = var->data;
-		int i = *(double*)((Variable*)indices->data)->data - 1;
-		int j = *(double*)((Variable*)indices->data + 1)->data - 1;
+		int i = arr[0] - 1;
+		int j = arr[1] - 1;
+		if (!Matrix_valid_indices(matrix, i, j)) {
+			goto return_error;
+		}
 		double* val = malloc(sizeof(double));
 		*val = *Matrix_at(matrix, i, j);
 		element = Variable_new(VAR_TYPE_NUMBER, NULL, val);
 	}
 	else {
-		printf("ERROR: Invalid indices!\n");
-		return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
+		goto return_error;
 	}
 	return element;
+return_error:
+	printf("ERROR: Invalid indices!\n");
+	return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 }
 
-Variable* convert_list(DynArr* dimensions, Variable* list) {
+Variable* convert_list(Variable* list, int* dims, int dims_size) {
 	
 	Variable* arr = ((DynArr*)list->data)->data;
 	int len = ((DynArr*)list->data)->len;
@@ -41,8 +50,8 @@ Variable* convert_list(DynArr* dimensions, Variable* list) {
 		}
 	}
 	Variable* var;
-	if (dimensions->len == 1) {
-		int dim = *(double*)((Variable*)dimensions->data)->data;
+	if (dims_size == 1) {
+		int dim = dims[0];
 		if (dim != len) {
 			goto return_error;
 		}
@@ -51,9 +60,9 @@ Variable* convert_list(DynArr* dimensions, Variable* list) {
 		vector->val = values;
 		var = Variable_new(VAR_TYPE_VECTOR, NULL, vector);
 	}
-	else if (dimensions->len == 2) {
-		int dim1 = *(double*)((Variable*)dimensions->data)->data;
-		int dim2 = *(double*)((Variable*)dimensions->data + 1)->data;
+	else if (dims_size == 2) {
+		int dim1 = dims[0];
+		int dim2 = dims[1];
 		if (dim1 * dim2 != len) {
 			goto return_error;
 		}
@@ -68,7 +77,7 @@ Variable* convert_list(DynArr* dimensions, Variable* list) {
 	}
 	return var;
 return_error:
-	printf("ERROR: invalid dimensions!\n");
+	printf("ERROR: invalid dims!\n");
 	free(values);
 	return Variable_new(VAR_TYPE_ERROR, NULL, NULL);
 }

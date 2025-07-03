@@ -8,6 +8,10 @@ typedef struct {
 	int N, M;
 } Matrix;
 
+bool Matrix_valid_indices(Matrix* A, int i, int j) {
+	return i >= 0 && i < A->N && j >= 0 && j < A->M;
+}
+
 double* Matrix_at(Matrix* A, int i, int j)
 {
 	return A->val + i * A->M + j;

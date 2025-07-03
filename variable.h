@@ -237,3 +237,17 @@ DynArrFunc DynArrVarFunc = {
 	Variable_free_data_name_void_ptr
 };
 
+/////////////////////////////////////////
+
+bool Variable_is_list_of_numbers(Variable* var) {
+	if (var->type != VAR_TYPE_LIST) return false;
+	DynArr* list = var->data;
+	if (list->elem_size != sizeof(Variable)) return false;
+	Variable* arr = list->data;
+	for (int i = 0; i < list->len; i++) {
+		if (arr[i].type != VAR_TYPE_NUMBER) {
+			return false;
+		}
+	}
+	return true;
+}

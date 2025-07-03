@@ -47,6 +47,7 @@ int _TreeNode_split(struct TreeNode* node) {
 		switch (token->type) {
 	
 		case TOKEN_TYPE_BRACKET2:
+		case TOKEN_TYPE_SQRBR2:
 			bracketLevel++;
 			break;
 
@@ -83,10 +84,11 @@ int _TreeNode_split(struct TreeNode* node) {
 			break;
 
 		case TOKEN_TYPE_SQRBR1:
-			priority = 0;
+			bracketLevel--;
+			priority = OPERATION_PRIORITY_UNARY;
 
 			if (chosenOperation == NULL ||
-		(priority <= minPriority && bracketLevel == minBracketLevel)
+		(priority < minPriority && bracketLevel == minBracketLevel)
 			|| bracketLevel < minBracketLevel) {
 
 				chosenOperation = token;
@@ -176,6 +178,8 @@ int _TreeNode_split(struct TreeNode* node) {
 	return 0;
 }
 
+Variable* evaluate_within_brackets(Token* expr, int exprLen);
+
 // get dimensions from square brackets
 DynArr* get_dimensions(Token* expr, int exprLen);
 
@@ -217,10 +221,11 @@ Variable* _TreeNode_evaluate(struct TreeNode* node) {
 		}
 		else if(node->right != NULL && node->left == NULL) {
 			Variable* rightVal = _TreeNode_evaluate(node->right);
-			node->value = convert_list(dims, rightVal);
+			node->value = convert_list(rightVal, dims->data, dims->len);
 			Variable_free(rightVal);
 		}
 		else {
+			printf("ERROR: failed to apply dimensions!\n");
 			goto return_dims_error;
 		}
 		DynArr_free(dims);
@@ -284,33 +289,52 @@ void ExpressionTree_print(ExpressionTree* tree) {
 	//printf("tree printed\n");
 }
 
-DynArr* get_dimensions(Token* expr, int exprLen) {
+Variable* evaluate_within_brackets(Token* expr, int exprLen) {
 	if(exprLen <= 2) return NULL;
 	ExpressionTree* tree = ExpressionTree_new(expr+1, exprLen-2);
 	ExpressionTree_split(tree);
 	Variable* res = ExpressionTree_evaluate(tree);
-	DynArr* arr;
 	ExpressionTree_free(tree);
-	if (res == NULL || res->type == VAR_TYPE_ERROR) { arr = NULL; }
-	else if (res->type != VAR_TYPE_LIST) {
-		if (res->type == VAR_TYPE_NUMBER) {
-			arr = DynArr_new(sizeof(Variable), 1, DynArrVarFunc);
-			DynArr_append(arr, res);
+	return res;
+}
+
+// DynArr of integers
+DynArr* get_dimensions(Token* expr, int exprLen) {
+	Variable* res = evaluate_within_brackets(expr, exprLen);
+	if (res == NULL) {
+		printf("ERROR: empty dimensions!\n");
+		return NULL;
+	}
+	DynArr* dims = NULL;
+	if (res->type == VAR_TYPE_NUMBER) {
+		int rounded = lround(*(double*)res->data);
+		if (rounded > 0) {
+			dims = DynArr_new(sizeof(int), 1, DynArrIntFunc);
+			DynArr_append(dims, &rounded);
 		} else {
-			arr = NULL;
+			printf("ERROR: dimensions must be positive!\n");
 		}
 	}
-	else {
-		arr = DynArr_copy(res->data);
-		for (int i = 0; i < arr->len; i++) {
-			Variable* var = (Variable*)arr->data + i;
-			if(var->type != VAR_TYPE_NUMBER) {
-				DynArr_free(arr);
-				arr = NULL;
+	else if (Variable_is_list_of_numbers(res)) {
+		DynArr* list = res->data;
+		Variable* arr = list->data;
+		dims = DynArr_new(sizeof(int), 1, DynArrIntFunc);
+		for (int i = 0; i < list->len; i++) {
+			int rounded = lround(*(double*)arr[i].data);
+			if (rounded > 0) {
+				DynArr_append(dims, &rounded);
+			} else {
+				DynArr_free(dims);
+				dims = NULL;
+				printf("ERROR: dimensions must be positive!\n");
 				break;
 			}
 		}
 	}
+	else {
+		printf("ERROR: non-number dimensions!\n");
+	}
 	Variable_free(res);
-	return arr;
+
+	return dims;
 }

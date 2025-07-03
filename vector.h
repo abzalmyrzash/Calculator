@@ -15,6 +15,10 @@ Vector* Vector_new(size_t N) {
 	return v;
 }
 
+bool Vector_valid_index(Vector* v, int i) {
+	return i >= 0 && i < v->N;
+}
+
 double Vector_magnitude(Vector* v) {
 	double res = 0;
 	for (size_t i = 0; i < v->N; i++) {
