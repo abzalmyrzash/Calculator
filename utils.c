@@ -14,7 +14,7 @@ static const int maxPrecision = 10;
 static double preciseIntLimit;
 static double preciseFracLimit;
 
-static const bool separateThousands = false;
+static const bool separateThousands = true;
 static const char thousandsSeparator = ' ';
 static const char fractionalSeparator = '.';
 static const char fracThousandsSeparator = ' ';
@@ -156,7 +156,7 @@ void print_number(double number) {
 	if (fraction == 0) goto compose_string;
 
 	for (int i = 0; i < precision; i++) {
-		if (fabs(fraction) < minFraction) break;
+		if (fraction < minFraction) break;
 		minFraction *= 10;
 		fraction *= 10;
 		if (ceil(fraction) - fraction <= minFraction) {
