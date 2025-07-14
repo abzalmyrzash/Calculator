@@ -14,6 +14,11 @@ static const int maxPrecision = 10;
 static double preciseIntLimit;
 static double preciseFracLimit;
 
+static const bool separateThousands = false;
+static const char thousandsSeparator = ' ';
+static const char fractionalSeparator = '.';
+static const char fracThousandsSeparator = ' ';
+
 static uint64 pow5_19;
 static const double log2_base10 = log10(2);
 static const double exp10neg1022 = 1022 * log10(2);
@@ -41,8 +46,7 @@ uint64 get_bits(double number, int nBits, int nBitsRight) {
 		mask = mask | (one << i);
 	}
 	uint64 res = (*(uint64*)&number >> nBitsRight) & mask;
-	return res;
-}
+	return res; }
 
 int intlog2(uint64 n) {
 	int l = 0;
@@ -106,11 +110,6 @@ void print_number(double number) {
 	char intDigits[numIntDigits];
 	char fracDigits[maxPrecision];
 
-	static const bool separateThousands = true;
-	static const char thousandsSeparator = ' ';
-	static const char fractionalSeparator = '.';
-	static const char fracThousandsSeparator = ' ';
-
 	if (number < 0) {
 		printf("-");
 		number = -number;
@@ -123,10 +122,26 @@ void print_number(double number) {
 		printf("%g", number);
 		return;
 	}
-	//printf("%.22g\n", number);
+	//printf("%.100g\n", number);
 
-	long long integer = floor(number);
+	uint64 integer = floor(number);
+
+	int exp = 0;
+	uint64 integer_ = integer;
+	while (integer_ != 0) {
+		integer_ /= 10;
+		exp++;
+	}
+
 	double fraction = number - integer;
+
+	int precision = maxPrecision - exp;
+	double minFraction = pow(10, -precision)/2;
+
+	if (fraction > 0 && 1 - fraction < minFraction) {
+		integer++;
+		fraction = 0;
+	}
 
 	int digitCnt = 0;
 	// integer digits will be reversed, will have to flip later
@@ -135,11 +150,11 @@ void print_number(double number) {
 		integer /= 10;
 	}
 
-	int precision = maxPrecision - digitCnt;
-	double minFraction = pow(10, -precision)/2;
-
 	int fracDigit;
 	int fracDigitCnt = 0;
+
+	if (fraction == 0) goto compose_string;
+
 	for (int i = 0; i < precision; i++) {
 		if (fabs(fraction) < minFraction) break;
 		minFraction *= 10;
@@ -150,6 +165,8 @@ void print_number(double number) {
 		fracDigits[fracDigitCnt++] = '0' + fracDigit;
 		fraction -= fracDigit;
 	}
+
+	compose_string:
 
 	int strI = 0; // string iterator
 
