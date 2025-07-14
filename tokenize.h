@@ -59,6 +59,7 @@ DynArr split_into_tokens(char* command)
 	char* tokenString;
 	int tokenLen;
 	TokenType tokenType;
+	Token* prev = NULL;
 
 	while(*tokenStart != '\0') {
 		if (*tokenStart == ' ') {
@@ -73,10 +74,6 @@ DynArr split_into_tokens(char* command)
 		bool is_bracket2 = *tokenStart == ')';
 		bool is_sqrbr1 = *tokenStart == '[';
 		bool is_sqrbr2 = *tokenStart == ']';
-		TokenType prevType = -1;
-		if (tokens.len > 0) {
-			prevType = ((Token*)DynArr_at(&tokens, tokens.len - 1))->type;
-		}
 
 		if (name_len > 0) {
 			tokenLen = name_len;
@@ -135,9 +132,13 @@ DynArr split_into_tokens(char* command)
 			}
 		}
 
+		if (prev == NULL) goto add_token;
+
+		check_prev_token:
+
 		// if something like 2a is inputted, assume multiplication
-		if (prevType != TOKEN_TYPE_SPECIAL &&
-	(prevType == TOKEN_TYPE_NUMBER || prevType == TOKEN_TYPE_NAME)
+		if (prev->type != TOKEN_TYPE_SPECIAL &&
+	(prev->type == TOKEN_TYPE_NUMBER || prev->type == TOKEN_TYPE_NAME)
 	&& (tokenType == TOKEN_TYPE_NAME || tokenType == TOKEN_TYPE_BRACKET1 ||
 	tokenType == TOKEN_TYPE_FUNCTION)) {
 			char* multiplyStr = malloc(2);
@@ -146,9 +147,39 @@ DynArr split_into_tokens(char* command)
 			DynArr_append(&tokens, &multiplyToken);
 		}
 
+		else if (prev->type == TOKEN_TYPE_NUMBER &&
+			tokenType == TOKEN_TYPE_NUMBER)
+		{
+			int combinedLen = tokenLen + strlen(prev->str);
+			char* combined = malloc(combinedLen + 1);
+			combined[0] = '\0';
+
+			strcat(combined, prev->str);
+			strcat(combined, tokenString);
+
+			free(prev->str);
+			free(tokenString);
+
+			prev->str = combined;
+			int dots = 0;
+			for (int i = 0; i < combinedLen; i++) {
+				if (combined[i] == '.') dots++;
+				if (dots == 2) {
+					printf("ERROR: two dots\n");
+					DynArr_clear(&tokens);
+					return tokens;
+				}
+			}
+			goto next_token;
+		}
+
+		add_token:
+
 		token = (Token){tokenString, tokenType};
+		prev = (Token*)DynArr_append(&tokens, &token);
+
+		next_token:
 		tokenStart += tokenLen;
-		DynArr_append(&tokens, &token);
 	}
 	return tokens;
 }

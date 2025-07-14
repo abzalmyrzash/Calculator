@@ -1,2 +1,2 @@
-a.out: main.c *.h
-	gcc main.c -lm
+a.out: *.c *.h
+	gcc *.c -lm

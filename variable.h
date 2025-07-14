@@ -5,6 +5,7 @@
 #include "matrix.h"
 #include "vector.h"
 #include "dynarr.h"
+#include "utils.h"
 
 typedef enum {
 	VAR_TYPE_NULL,
@@ -77,10 +78,14 @@ void Variable_print(Variable* var, bool withTypeName) {
 		Vector_print(var->data);
 		break;
 	case VAR_TYPE_NUMBER:
-		printf("%g\n", *(double*)var->data);
+		//printf("%.17g\n", *(double*)var->data);
+		print_number(*(double*)var->data);
+		printf("\n");
 		break;
 	case VAR_TYPE_PERCENT:
-		printf("%g%\n", *(double*)var->data);
+		//printf("%.17g%\n", *(double*)var->data);
+		print_number(*(double*)var->data);
+		printf("\n");
 		break;
 	case VAR_TYPE_LIST:
 		DynArr_print(var->data);

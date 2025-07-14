@@ -341,7 +341,7 @@ int process_command(char* command) {
 		DynArr_free_data(&tokens);
 		return 1;
 	}
-	// DynArr_print(tokens);
+	//DynArr_print(&tokens);
 	int res = process_tokens(tokens.data, tokens.len);
 	DynArr_free_data(&tokens);
 	return res;

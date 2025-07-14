@@ -102,3 +102,31 @@ bool str_is_num(char* str) {
 	return str_is_num_len(str) == strlen(str);
 }
 
+void str_remove_chr(char* str, char chr, char* out) {
+	int strLen = strlen(str);
+
+	if (out == NULL || out == str) goto remove_in_place;
+
+	int outLen = 0;
+	for (int i = 0; i < strLen; i++) {
+		if (str[i] != chr) {
+			out[outLen++] = str[i];
+		}
+	}
+
+	remove_in_place:
+
+	int i = 0;
+	int cnt;
+	while (str[i] != '\n') {
+		cnt = 0;
+		while (str[i + cnt] == chr) {
+			cnt++;
+		}
+		if (cnt > 0) {
+			strLen -= cnt;
+			memcpy(str + i, str + i + cnt, strLen - i);
+		}
+		i++;
+	}
+}
