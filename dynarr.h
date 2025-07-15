@@ -183,7 +183,7 @@ void* DynArr_insert_empty(DynArr* a, size_t ind) {
 }
 
 void* DynArr_insert_arr(DynArr *a, size_t ind, void* arr, size_t n) {
-	assert(_DynArr_check_range(a, ind, n));
+	assert(_DynArr_check_index(a, ind));
 	size_t prev_len = a->len;
 	DynArr_grow(a, n);
 	size_t num_to_move = prev_len - ind;
@@ -191,8 +191,8 @@ void* DynArr_insert_arr(DynArr *a, size_t ind, void* arr, size_t n) {
 	return DynArr_assign_arr(a, ind, arr, n);
 }
 
-void* DynArr_insert_arr_empty(DynArr*a, size_t ind, size_t n) {
-	assert(_DynArr_check_range(a, ind, n));
+void* DynArr_insert_arr_empty(DynArr* a, size_t ind, size_t n) {
+	assert(_DynArr_check_index(a, ind));
 	size_t prev_len = a->len;
 	DynArr_grow(a, n);
 	size_t num_to_move = prev_len - ind;
