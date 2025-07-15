@@ -89,7 +89,7 @@ int str_is_num_len(char* str) {
 	while(isdigit(c)) {
 		c = str[++i];
 	}
-	if (c == '.' && isdigit(str[i+1])) {
+	if (c == '.') {
 		c = str[++i];
 	} else return i;
 	while(isdigit(c)) {

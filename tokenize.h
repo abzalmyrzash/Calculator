@@ -165,7 +165,7 @@ DynArr split_into_tokens(char* command)
 			for (int i = 0; i < combinedLen; i++) {
 				if (combined[i] == '.') dots++;
 				if (dots == 2) {
-					printf("ERROR: two dots\n");
+					printf("ERROR: number with two dots!\n");
 					DynArr_clear(&tokens);
 					return tokens;
 				}

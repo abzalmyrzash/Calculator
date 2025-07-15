@@ -7,7 +7,12 @@ void read_command(char* buffer, size_t bufsize) {
 		printf("\n");
 		exit(1);
 	}
-	strtok(buffer, "\n");
+	for (char* c = buffer; *c != '\0'; c++) {
+		if (*c == '\n') {
+			*c = '\0';
+			break;
+		}
+	}
 }
 
 ExpressionTree *tree = NULL;
