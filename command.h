@@ -136,6 +136,9 @@ int process_tokens_calc(Token* tokens, int len) {
 		memory->type = res->type;
 		free(res);
 	}
+	else if (strsame(res->name, memory->name)) { // if same as memory
+		// do nothing
+	}
 	else { // if res has name, assign by copying
 		Variable_free_data(memory);
 		memory->data = Variable_copy_data(res);
