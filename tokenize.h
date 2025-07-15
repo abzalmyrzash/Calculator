@@ -175,8 +175,9 @@ DynArr split_into_tokens(char* command)
 
 		add_token:
 
-		token = (Token){tokenString, tokenType};
-		prev = (Token*)DynArr_append(&tokens, &token);
+		prev = (Token*)DynArr_append_empty(&tokens);
+		prev->str = tokenString;
+		prev->type = tokenType;
 
 		next_token:
 		tokenStart += tokenLen;
